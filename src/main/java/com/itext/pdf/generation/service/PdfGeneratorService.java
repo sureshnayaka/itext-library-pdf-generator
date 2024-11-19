@@ -2,64 +2,78 @@ package com.itext.pdf.generation.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.stream.Stream;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Optional;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.itext.pdf.generation.helpers.CP0PageTemplate;
+import com.itext.pdf.generation.helpers.CP1PageTemplate;
+import com.itext.pdf.generation.helpers.GovernanceAuditSummary;
+import com.itext.pdf.generation.helpers.GovernanceVolumeSummary;
 import com.itext.pdf.generation.helpers.PDfGenerationHelpers;
-import com.itextpdf.text.BaseColor;
+import com.itext.pdf.generation.helpers.PageHeader;
+import com.itext.pdf.generation.pojo.CP;
+import com.itextpdf.text.BadElementException;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
 import com.itextpdf.text.Image;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Phrase;
-import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.PageSize;
 import com.itextpdf.text.pdf.PdfWriter;
 
 @Service
 public class PdfGeneratorService {
 
-	private static final Font TITLE_FONT = new Font(Font.FontFamily.TIMES_ROMAN, 16, Font.NORMAL);
-	private static final Font RED_FONT = new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL, BaseColor.RED);
-	private static final Font DEFAULT_FONT = new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL);
-	private static final URL LOGO_URL;
+	private static final Logger logger = LogManager.getLogger(PdfGeneratorService.class);
 
-	static {
-	    URL tempUrl = null;
-	    try {
-	        tempUrl = new URL("https://s-cloudfront.cdn.ap.panopto.com/sessions/_branding/823ca9be-cf06-4f09-9182-acf60045ea8e/637543669628126231_largelogo.png");
-	    } catch (MalformedURLException e) {
-	        e.printStackTrace(); // Handle exception as needed
-	    }
-	    LOGO_URL = tempUrl; // Assign the initialized URL
+	@Autowired
+	CP0PageTemplate cp0PageTemplate;
+	@Autowired
+	CP1PageTemplate cp1PageTemplate;
+	@Autowired
+	GovernanceAuditSummary governanceAuditSummary;
+	@Autowired
+	GovernanceVolumeSummary governanceVolumeSummary;
+
+	public Image loadImage(String filePath) {
+		try (InputStream input = getClass().getResourceAsStream(filePath)) {
+			if (input == null) {
+				throw new IOException("Image not found at specified path.");
+			}
+			return Image.getInstance(input.readAllBytes());
+		} catch (IOException | BadElementException e) {
+			logger.error("Error loading image: " + e.getMessage());
+			e.printStackTrace();
+		}
+		return null;
 	}
 
-
-
-
-	public byte[] generatePdf() {
-		Rectangle pageSize = new Rectangle(450, 350);
-		Document document = new Document(pageSize);
+	/**
+	 * To generate the CP pdf
+	 * 
+	 * @return bytes array
+	 */
+	public byte[] generatePdf(List<CP> cp) {
+		Document document = new Document(PageSize.A4.rotate());
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 
 		try {
-			
-			PdfWriter writer = PdfWriter.getInstance(document, out);
-			writer.setPageEvent(new PDfGenerationHelpers(LOGO_URL));
 
+			PDfGenerationHelpers generationHelpers = new PDfGenerationHelpers();
+			PdfWriter writer = PdfWriter.getInstance(document, out);
+			writer.setPageEvent(generationHelpers);
 			document.open();
-			addTitle(document, "Student Information");
-			addTable(document);
-			addRepeatedPages(document, "Student Information");
+			PageHeader.addPageHeaders(document);
+			initializeCP(document, cp);
+			initalizeGovernanceAuditAndVolumeSummary(document, cp);
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Error in creating CPs PDF : {}", e.getMessage(), e);
 		} finally {
 			document.close();
 		}
@@ -67,67 +81,122 @@ public class PdfGeneratorService {
 		return out.toByteArray();
 	}
 
-	private void addTitle(Document document, String titleText) throws Exception {
-		Paragraph title = new Paragraph(titleText, TITLE_FONT);
-		title.setAlignment(Element.ALIGN_CENTER);
-		title.setSpacingBefore(50);
-		document.add(title);
-	}
-
-	private void addImage(Document document, URL url) throws DocumentException, MalformedURLException, IOException {
-
-		Image logo = Image.getInstance(url);
-		logo.scaleToFit(250, 250);
-		logo.setAlignment(Element.ALIGN_CENTER);
-		document.add(logo);
-	}
-
-	private void addTable(Document document) throws Exception {
-		PdfPTable table = new PdfPTable(3);
-		table.setWidthPercentage(100);
-		table.setSpacingBefore(50f);
-
-		addTableHeader(table);
-		addTableRows(table);
-
-		document.add(table);
-	}
-
-	private void addTableHeader(PdfPTable table) {
-		Stream.of("ID", "Name", "Class").forEach(columnTitle -> {
-			PdfPCell header = new PdfPCell(new Phrase(columnTitle, DEFAULT_FONT));
-			header.setBackgroundColor(BaseColor.YELLOW);
-			header.setHorizontalAlignment(Element.ALIGN_CENTER);
-			table.addCell(header);
-		});
-	}
-
-	private void addTableRows(PdfPTable table) {
-		for (int i = 0; i <= 3; i++) {
-			Font font = (i % 2 == 0) ? DEFAULT_FONT : RED_FONT;
-			BaseColor bgColor = (i % 2 == 0) ? BaseColor.WHITE : BaseColor.DARK_GRAY;
-
-			addTableCell(table, String.valueOf(i), font, bgColor);
-			addTableCell(table, "Name " + i, font, bgColor);
-			addTableCell(table, "Class " + i, font, bgColor);
-		}
-	}
-
-	private void addTableCell(PdfPTable table, String text, Font font, BaseColor bgColor) {
-		PdfPCell cell = new PdfPCell(new Phrase(text, font));
-		cell.setBackgroundColor(bgColor);
-		cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-		table.addCell(cell);
-	}
-
-	private void addRepeatedPages(Document document, String titleText) throws Exception {
-		for (int i = 0; i < 2; i++) {
+	/**
+	 * Initalize Aduit and volume summary on page end
+	 * 
+	 * @param document
+	 */
+	public void initalizeGovernanceAuditAndVolumeSummary(Document document, List<CP> cp) {
+		try {
 			document.newPage();
-			addTitle(document, titleText);
-			addTable(document);
-			if(i==1) {
-				addImage(document, LOGO_URL);
-			}
+
+			PDfGenerationHelpers.addTitle(document, "Governance Audit Summary", false);
+			governanceAuditSummary.addGovernanceAuditSummary(document);
+			PDfGenerationHelpers.addTitle(document, "Governance Volume Summary", false);
+			governanceVolumeSummary.governanceVolumeSummary(document, cp);
+
+		} catch (DocumentException | JsonProcessingException e) {
+			logger.error("Error in initalizing PDF Summary : {}", e.getMessage(), e);
+		} finally {
+			document.close();
 		}
 	}
+
+	/**
+	 * Initalize CP to print on the document based on the input list of CP
+	 * 
+	 * @param document
+	 * @param cpList
+	 */
+	public void initializeCP(Document document, List<CP> cpList) {
+		try {
+			if (cpList.size() <= 0) {
+				throw new DocumentException("Atleast one cpList is required to generate PDF.");
+			}
+			cpList.forEach(cpObj -> {
+
+				try {
+					initializeCPDocument(document, cpObj);
+				} catch (DocumentException e) {
+					logger.error("Error initializing CP {}: {}", cpObj.getCpName(), e.getMessage(), e);
+				}
+			});
+		} catch (DocumentException e) {
+			logger.error("Error initializing CPs: {}", e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * check which cp to print and ignore other based on the input
+	 * 
+	 * @param document
+	 * @param cpObj
+	 * @throws DocumentException
+	 */
+	private void initializeCPDocument(Document document, CP cpObj) throws DocumentException {
+
+		String cpName = cpObj.getCpName();
+
+		boolean isSamePreviousCP = Optional.ofNullable(cpObj.getIsSamePreviourCP()).orElse(false);
+		boolean isActiveCP = Optional.ofNullable(cpObj.getIsActive()).orElse(false);
+
+		if (isSamePreviousCP) {
+			document.newPage();
+			PDfGenerationHelpers.addTitle(document, cpName.concat(" is same as previous CP"), false);
+			return;
+		}
+
+		switch (cpName.toUpperCase()) {
+		case "CP-0":
+			addCP0Content(document, isActiveCP);
+			break;
+		case "CP-1":
+			addCP1Content(document, cpName, isActiveCP);
+			break;
+		case "CP-2":
+			addCP1Content(document, cpName, isActiveCP);
+			break;
+		case "CP-3":
+			addCP1Content(document, cpName, isActiveCP);
+			break;
+		case "CP-4":
+			addCP1Content(document, cpName, isActiveCP);
+			break;
+
+		default:
+			logger.warn("Unrecognized CP name: {}", cpName);
+		}
+	}
+
+	/**
+	 * this is to intialzie the CP0 template
+	 * 
+	 * @param document
+	 * @throws DocumentException
+	 */
+	private void addCP0Content(Document document, boolean isActive) throws DocumentException {
+		PDfGenerationHelpers.addTitle(document, "CP-0", isActive);
+		cp0PageTemplate.addMarketScopeTableForCp0(document);
+		cp0PageTemplate.addDeliverablesVSThresholdForCp0(document);
+		PDfGenerationHelpers.addChunkParagraph(document, "What is the Project? :", "Some project details");
+		PDfGenerationHelpers.addChunkParagraph(document, "What is the commercial benefit of approving this project? :",
+				"Some commercial benefit details");
+		cp0PageTemplate.addPortFolioStartegyForCp0(document);
+		PDfGenerationHelpers.addChunkParagraph(document, "Approver comments :", "Some comments from approver");
+	}
+
+	/**
+	 * This is to initalize the cp1 template
+	 * 
+	 */
+	private void addCP1Content(Document document, String cpName, boolean isActive) throws DocumentException {
+		document.newPage();
+		PDfGenerationHelpers.addTitle(document, cpName, isActive);
+		cp1PageTemplate.addMarketScopeTableForCp1(document);
+		cp1PageTemplate.addDeliverablesVSThresholdForCp1(document);
+		PDfGenerationHelpers.addChunkParagraph(document, "Project Managers comments :",
+				"Some comments from Project Managers");
+		PDfGenerationHelpers.addChunkParagraph(document, "Approver comments :", "Some comments from approver");
+	}
+
 }
