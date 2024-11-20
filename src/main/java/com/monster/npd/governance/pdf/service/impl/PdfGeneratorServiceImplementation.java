@@ -1,8 +1,6 @@
-package com.monster.npd.governance.pdf.service;
+package com.monster.npd.governance.pdf.service.impl;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,68 +10,80 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.itextpdf.text.BadElementException;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Image;
 import com.itextpdf.text.PageSize;
 import com.itextpdf.text.pdf.PdfWriter;
-import com.monster.npd.governance.pdf.helpers.CP0PageTemplate;
-import com.monster.npd.governance.pdf.helpers.CP1PageTemplate;
+import com.monster.npd.governance.pdf.helpers.CPPageTemplate;
+import com.monster.npd.governance.pdf.helpers.CpHelper;
 import com.monster.npd.governance.pdf.helpers.GovernanceAuditSummary;
 import com.monster.npd.governance.pdf.helpers.GovernanceVolumeSummary;
 import com.monster.npd.governance.pdf.helpers.PDfGenerationHelpers;
 import com.monster.npd.governance.pdf.helpers.PageHeader;
 import com.monster.npd.governance.pdf.pojo.CP;
+import com.monster.npd.governance.pdf.pojo.PageHeaderDetailsDTO;
+import com.monster.npd.governance.pdf.service.PdfGeneratorInterface;
+import com.monster.npd.governance.pdf.utils.Utils;
 
 @Service
-public class PdfGeneratorService {
+public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface {
 
-	private static final Logger logger = LogManager.getLogger(PdfGeneratorService.class);
+	private static final Logger logger = LogManager.getLogger(PdfGeneratorServiceImplementation.class);
+
+	private static final String CP0 = "CP0";
+	private static final String CP1 = "CP1";
 
 	@Autowired
-	CP0PageTemplate cp0PageTemplate;
-	@Autowired
-	CP1PageTemplate cp1PageTemplate;
+	CPPageTemplate cpPageTemplate;
 	@Autowired
 	GovernanceAuditSummary governanceAuditSummary;
 	@Autowired
 	GovernanceVolumeSummary governanceVolumeSummary;
-
-	public Image loadImage(String filePath) {
-		try (InputStream input = getClass().getResourceAsStream(filePath)) {
-			if (input == null) {
-				throw new IOException("Image not found at specified path.");
-			}
-			return Image.getInstance(input.readAllBytes());
-		} catch (IOException | BadElementException e) {
-			logger.error("Error loading image: " + e.getMessage());
-			e.printStackTrace();
-		}
-		return null;
-	}
+	@Autowired
+	PageHeader pageHeader;
+	@Autowired
+	CpHelper cpHelper;
 
 	/**
 	 * To generate the CP pdf
 	 * 
 	 * @return bytes array
+	 * @throws Exception
 	 */
-	public byte[] generatePdf(List<CP> cp) {
+	public byte[] generatePdf(long requestId) {
+
 		Document document = new Document(PageSize.A4.rotate());
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 
 		try {
+			if (Utils.isNullOrEmptyLong(requestId)) {
+				throw new NullPointerException("Empty request id");
+			}
+
+			List<CP> cp = cpHelper.getCpByRequestId(requestId);
+
+			// Check if the cp list is null or empty and throw an error
+			if (cp == null || cp.isEmpty()) {
+				throw new NullPointerException("CP list is null or empty for requestId: " + requestId);
+			}
 
 			PDfGenerationHelpers generationHelpers = new PDfGenerationHelpers();
 			PdfWriter writer = PdfWriter.getInstance(document, out);
 			writer.setPageEvent(generationHelpers);
 			document.open();
-			PageHeader.addPageHeaders(document);
-			initializeCP(document, cp);
+
+			PageHeaderDetailsDTO pageHeaderDetailsDTO = pageHeader.getHeaderData(requestId);
+			PageHeader.addPageHeaders(document, pageHeaderDetailsDTO);
+
+			// Initialize the CP data in the document
+			initializeCP(document, cp, requestId);
+
+			// Initialize Governance and Volume Summary in the document
 			initalizeGovernanceAuditAndVolumeSummary(document, cp);
 
 		} catch (Exception e) {
 			logger.error("Error in creating CPs PDF : {}", e.getMessage(), e);
+			throw new NullPointerException(e.getMessage());
 		} finally {
 			document.close();
 		}
@@ -108,7 +118,7 @@ public class PdfGeneratorService {
 	 * @param document
 	 * @param cpList
 	 */
-	public void initializeCP(Document document, List<CP> cpList) {
+	public void initializeCP(Document document, List<CP> cpList, long requestId) {
 		try {
 			if (cpList.size() <= 0) {
 				throw new DocumentException("Atleast one cpList is required to generate PDF.");
@@ -116,7 +126,7 @@ public class PdfGeneratorService {
 			cpList.forEach(cpObj -> {
 
 				try {
-					initializeCPDocument(document, cpObj);
+					initializeCPDocument(document, cpObj, requestId);
 				} catch (DocumentException e) {
 					logger.error("Error initializing CP {}: {}", cpObj.getCpName(), e.getMessage(), e);
 				}
@@ -133,7 +143,7 @@ public class PdfGeneratorService {
 	 * @param cpObj
 	 * @throws DocumentException
 	 */
-	private void initializeCPDocument(Document document, CP cpObj) throws DocumentException {
+	private void initializeCPDocument(Document document, CP cpObj, long requestId) throws DocumentException {
 
 		String cpName = cpObj.getCpName();
 
@@ -145,27 +155,7 @@ public class PdfGeneratorService {
 			PDfGenerationHelpers.addTitle(document, cpName.concat(" is same as previous CP"), false);
 			return;
 		}
-
-		switch (cpName.toUpperCase()) {
-		case "CP-0":
-			addCP0Content(document, isActiveCP);
-			break;
-		case "CP-1":
-			addCP1Content(document, cpName, isActiveCP);
-			break;
-		case "CP-2":
-			addCP1Content(document, cpName, isActiveCP);
-			break;
-		case "CP-3":
-			addCP1Content(document, cpName, isActiveCP);
-			break;
-		case "CP-4":
-			addCP1Content(document, cpName, isActiveCP);
-			break;
-
-		default:
-			logger.warn("Unrecognized CP name: {}", cpName);
-		}
+		addCPContent(document, isActiveCP, requestId, cpName);
 	}
 
 	/**
@@ -174,28 +164,24 @@ public class PdfGeneratorService {
 	 * @param document
 	 * @throws DocumentException
 	 */
-	private void addCP0Content(Document document, boolean isActive) throws DocumentException {
-		PDfGenerationHelpers.addTitle(document, "CP-0", isActive);
-		cp0PageTemplate.addMarketScopeTableForCp0(document);
-		cp0PageTemplate.addDeliverablesVSThresholdForCp0(document);
-		PDfGenerationHelpers.addChunkParagraph(document, "What is the Project? :", "Some project details");
-		PDfGenerationHelpers.addChunkParagraph(document, "What is the commercial benefit of approving this project? :",
-				"Some commercial benefit details");
-		cp0PageTemplate.addPortFolioStartegyForCp0(document);
-		PDfGenerationHelpers.addChunkParagraph(document, "Approver comments :", "Some comments from approver");
-	}
-
-	/**
-	 * This is to initalize the cp1 template
-	 * 
-	 */
-	private void addCP1Content(Document document, String cpName, boolean isActive) throws DocumentException {
-		document.newPage();
+	private void addCPContent(Document document, boolean isActive, long requestId, String cpName)
+			throws DocumentException {
+		if (!cpName.equalsIgnoreCase(CP0))
+			document.newPage();
 		PDfGenerationHelpers.addTitle(document, cpName, isActive);
-		cp1PageTemplate.addMarketScopeTableForCp1(document);
-		cp1PageTemplate.addDeliverablesVSThresholdForCp1(document);
-		PDfGenerationHelpers.addChunkParagraph(document, "Project Managers comments :",
-				"Some comments from Project Managers");
+		cpPageTemplate.addMarketScopeTableForCp(document, requestId, cpName);
+		cpPageTemplate.addDeliverablesVSThresholdForCp(document, requestId, cpName);
+		if (cpName.equalsIgnoreCase(CP0)) {
+			PDfGenerationHelpers.addChunkParagraph(document, "What is the Project? :", "Some project details");
+			PDfGenerationHelpers.addChunkParagraph(document,
+					"What is the commercial benefit of approving this project? :", "Some commercial benefit details");
+		} else {
+			PDfGenerationHelpers.addChunkParagraph(document, "Project Managers comments :",
+					"Some comments from Project Managers");
+		}
+		if (cpName.equalsIgnoreCase(CP0) || cpName.equalsIgnoreCase(CP1)) {
+			cpPageTemplate.addPortFolioStartegyForCp0(document, requestId);
+		}
 		PDfGenerationHelpers.addChunkParagraph(document, "Approver comments :", "Some comments from approver");
 	}
 

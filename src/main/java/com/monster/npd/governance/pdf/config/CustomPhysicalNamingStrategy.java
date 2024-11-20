@@ -28,11 +28,28 @@ public class CustomPhysicalNamingStrategy implements PhysicalNamingStrategy {
 	@Value("${npd.request.commercialMarketScope}")
 	public String commercialMarketScope;
 
+	@Value("${npd.request.requiredUserOrganizationid}")
+	public String UserRequiredORG_ID;
+
 	@Override
 	public Identifier toPhysicalTableName(Identifier name, JdbcEnvironment context) {
-		// Adding prefix to table names
-		String newTableName = PREFIX + name.getText();
-		return Identifier.toIdentifier(newTableName);
+		if (name == null || name.getText() == null || Utils.isNullOrEmptyString(UserRequiredORG_ID)) {
+			logger.error("Input Identifier or its text is null.");
+			throw new IllegalArgumentException("Input Identifier or its text cannot be null");
+		}
+
+		String entityCheckString = "opentextentityidentitycomponentsidentity";
+		String tableName = name.getText();
+
+		if (tableName.toLowerCase().contains(entityCheckString)) {
+			String tableNameWithPrefix = UserRequiredORG_ID + tableName;
+			logger.debug("Returning table name with UserRequiredORG_ID prefix: {}", tableNameWithPrefix);
+			return Identifier.toIdentifier(tableNameWithPrefix);
+		}
+		String tableNameWithPrefix = PREFIX + tableName;
+		logger.debug("Returning table name with default prefix: {}", tableNameWithPrefix);
+
+		return Identifier.toIdentifier(tableNameWithPrefix);
 	}
 
 	@Override

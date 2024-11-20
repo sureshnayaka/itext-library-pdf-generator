@@ -8,8 +8,13 @@ import javax.persistence.Id;
 import javax.persistence.Lob;
 import javax.persistence.Table;
 
+import lombok.Getter;
+import lombok.Setter;
+
 @Entity
 @Table(name = "SubmissionGovernance_Milestone")
+@Getter
+@Setter
 public class SubmissionGovernanceMilestone {
 
     @Id
@@ -48,13 +53,13 @@ public class SubmissionGovernanceMilestone {
     @Column(name = "S_TEMPORARY_COPY_DATA")
     private byte[] sTemporaryCopyData;
 
-    @Column(name = "CommercialRationaleForChanges", length = 64)
-    private String commercialRationaleForChanges;
-
-    @Column(name = "GovernanceApproach", length = 64)
-    private String governanceApproach;
-
-    @Lob
-    @Column(name = "ProjectManagerComments")
-    private String projectManagerComments;
+//    @Column(name = "CommercialRationaleForChanges", length = 64)
+//    private String commercialRationaleForChanges;
+//
+//    @Column(name = "GovernanceApproach", length = 64)
+//    private String governanceApproach;
+//
+//    @Lob
+//    @Column(name = "ProjectManagerComments")
+//    private String projectManagerComments;
 }

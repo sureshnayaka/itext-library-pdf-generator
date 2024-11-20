@@ -27,7 +27,6 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfPageEventHelper;
 import com.itextpdf.text.pdf.PdfWriter;
-import com.monster.npd.governance.pdf.service.PdfGeneratorService;
 
 /**
  * @author Suresh this is the helper class used to create the pdf table, cells,
@@ -35,7 +34,7 @@ import com.monster.npd.governance.pdf.service.PdfGeneratorService;
  */
 @Component
 public class PDfGenerationHelpers extends PdfPageEventHelper {
-	private static final Logger logger = LogManager.getLogger(PdfGeneratorService.class);
+	private static final Logger logger = LogManager.getLogger(PDfGenerationHelpers.class);
 
 	private static final Font TITLE_FONT = new Font(Font.FontFamily.TIMES_ROMAN, 14, Font.BOLD, BaseColor.BLACK);
 	private static final Font TITLE_FONT_ACTIVE = new Font(Font.FontFamily.TIMES_ROMAN, 14, Font.BOLD,

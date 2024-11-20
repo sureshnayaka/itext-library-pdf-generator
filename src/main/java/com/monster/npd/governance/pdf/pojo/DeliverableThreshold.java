@@ -50,7 +50,7 @@ public class DeliverableThreshold {
 	@Column(name = "Distribution", length = 64)
 	private String distribution;
 
-	@Column(name = "R_PO_GOVERNANCE_MILESTONE_Id")
-	private Long governanceMilestoneId;
+	@Column(name = "R_PO_GOVERNANCE_MILESTONE_ID")
+	private Long poGovernanceMSId;
 
 }
