@@ -10,14 +10,14 @@
 		<version>2.5.6</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.monster.npd.governance</groupId>
-	<artifactId>pdfGenerator</artifactId>
+	<groupId>com.monster.npd.governance.pdf</groupId>
+	<artifactId>monster.npd.governance</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>pdfGenerator</name>
+	<name>monster-npd-governance-pdf</name>
 	<description>This project for NPD PDF</description>
 	<packaging>war</packaging>
 	<properties>
-		<java.version>11</java.version>
+		<java.version>17</java.version>
 		<log4j2.version>2.12.3</log4j2.version>
 	</properties>
 	<dependencies>

@@ -54,6 +54,9 @@ public class PageHeader {
 	private ReportingQuarterRepository reportingQuarter;
 	@Autowired
 	private UserIdentityRepository identityRepository;
+	
+	@Autowired
+	CpDataProcessor cpDataProcessor;
 
 	public static void addPageHeaders(Document document, PageHeaderDetailsDTO headerDetailsDTO)
 			throws DocumentException, IllegalArgumentException, IllegalAccessException {
@@ -102,11 +105,12 @@ public class PageHeader {
 			String programTag = getProgramTag(submissionRequest.getRPoProgramTagId());
 			String reportingQuarter = getReportingQuarter(submissionRequest.getRPoPmDeliveryQuarterId());
 			String e2ePMName = getUserName(submissionRequest.getRPoE2ePmId());
+			String cpLastActiveDate = cpDataProcessor.getLastCPDate(requestId);
 
 			// Create DTO object
 			PageHeaderDetailsDTO pageHeaderDetailsDTO = new PageHeaderDetailsDTO(submissionRequest.getProjectName(),
 					projectType, projectSubType, programTag, reportingQuarter,
-					"CP-" + submissionRequest.getCurrentCheckpoint(), e2ePMName, "-");
+					"CP-" + submissionRequest.getCurrentCheckpoint(), e2ePMName, cpLastActiveDate);
 
 			logger.debug("PageHeaderDetailsDTO: {}", new ObjectMapper().writeValueAsString(pageHeaderDetailsDTO));
 
@@ -170,7 +174,7 @@ public class PageHeader {
 		                default -> "Unknown";
 		            };
 		        })
-		        .orElse("DTO is null or label not found");  // Fallback if dto is null or the label is not found
+		        .orElse("-");
 		}
 
 

@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,74 +24,53 @@ import com.itextpdf.text.Phrase;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.monster.npd.governance.pdf.pojo.CP;
+import com.monster.npd.governance.pdf.pojo.CheckpointData;
+import com.monster.npd.governance.pdf.pojo.MarketScope;
+import com.monster.npd.governance.pdf.pojo.MarketScopeDTO;
 
 @Component
 public class GovernanceVolumeSummary {
 
-	public void governanceVolumeSummary(Document document, List<CP> cp)
+	@Autowired
+	CpDataProcessor cpDataProcessor;
+
+	public void governanceVolumeSummary(Document document, long requestId)
 			throws DocumentException, JsonMappingException, JsonProcessingException {
 
 		Font font = FontFactory.getFont(FontFactory.TIMES_BOLD, 9, BaseColor.WHITE);
 		Font subCell = new Font(Font.FontFamily.TIMES_ROMAN, 9, Font.NORMAL, BaseColor.BLACK);
 		Font fontCell = FontFactory.getFont(FontFactory.TIMES_BOLD, 9, BaseColor.BLACK);
 
-		// Define CP headers and their respective colors
+		Map<String, CheckpointData> commercialMarketScopes = cpDataProcessor.getCPforVolumeSummary(requestId);
 		List<String> cpHeaders = new ArrayList<>();
+		for (String key : commercialMarketScopes.keySet()) {
+			cpHeaders.add(key);
+		}
 
-		cp.forEach(cpObj -> cpHeaders.add(cpObj.getCpName()));
-
-		String jsonString = """
-				{
-				    "cp0": {
-				        "anualizedValue": { "value": 100, "change": "5%" },
-				        "3M volume": { "value": 200, "change": "4%" },
-				        "nsv": { "value": 300, "change": "2%" },
-				        "DP": { "value": 400, "change": "3%" }
-				    },
-				    "cp1": {
-				        "anualizedValue": { "value": 120, "change": "3%" },
-				        "3M volume": { "value": 180, "change": "1%" },
-				        "nsv": { "value": 250, "change": "7%" },
-				        "DP": { "value": 370, "change": "5%" }
-				    },
-				     "cp2": {
-				                "anualizedValue": { "value": 110, "change": "6%" },
-				                "3M volume": { "value": 220, "change": "3%" },
-				                "nsv": { "value": 330, "change": "4%" },
-				                "DP": { "value": 440, "change": "2%" }
-				            },
-				             "cp3": {
-				                "anualizedValue": { "value":" ", "change": " " },
-				                "3M volume": { "value": "N/A", "change": " N/A" },
-				                "nsv": { "value": 330, "change": "4%" },
-				                "DP": { "value": 440, "change": "2%" }
-				            }
-				}
-				""";
-
+		if (commercialMarketScopes.isEmpty()) {
+			return;
+		}
 		ObjectMapper objectMapper = new ObjectMapper();
-		JsonNode rootNode = objectMapper.readTree(jsonString);
+		String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(commercialMarketScopes);
+
+		JsonNode rootNode = objectMapper.readTree(json);
 
 		// Extract metric names (e.g., anualizedValue, 3M volume, etc.)
-		Iterator<String> metricKeys = rootNode.get("cp0").fieldNames(); // Assuming all CPs have the same keys
+		Iterator<String> metricKeys = rootNode.get(cpHeaders.get(0)).fieldNames(); // Assuming all CPs have the same
+																					// keys
 
 		List<List<String>> rowData = new ArrayList<>();
-
-		// Iterate over all metrics (e.g., anualizedValue, 3M volume, etc.)
 		while (metricKeys.hasNext()) {
 			String metricKey = metricKeys.next();
 			List<String> row = new ArrayList<>();
 
-			// Iterate over each CP (cp0, cp1, cp2, etc.)
 			for (Iterator<String> cpIterator = rootNode.fieldNames(); cpIterator.hasNext();) {
 				String cpKey = cpIterator.next();
-					JsonNode metricNode = rootNode.get(cpKey).get(metricKey);
+				JsonNode metricNode = rootNode.get(cpKey).get(metricKey);
 
-					// Add value and change for the current metric and CP
-					row.add(metricNode.get("value").asText());
-					row.add(metricNode.get("change").asText());
-				}
-			
+				row.add(metricNode.get("value").asText());
+				row.add(metricNode.get("change").asText());
+			}
 
 			// Add the row to the result
 			rowData.add(row);

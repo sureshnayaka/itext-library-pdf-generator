@@ -17,9 +17,6 @@ import com.monster.npd.governance.pdf.pojo.DeliverableThresholdDTO;
 import com.monster.npd.governance.pdf.pojo.MarketScope;
 import com.monster.npd.governance.pdf.pojo.MarketScopeDTO;
 import com.monster.npd.governance.pdf.pojo.SubmissionRequest;
-import com.monster.npd.governance.pdf.pojo.SubmissionRequestGovernanceMilestone;
-import com.monster.npd.governance.pdf.repository.SubmissionRequestGovernanceMilestoneRepository;
-import com.monster.npd.governance.pdf.utils.Utils;
 
 @Component
 public class CPPageTemplate {
@@ -27,10 +24,7 @@ public class CPPageTemplate {
 	private static final Logger logger = LogManager.getLogger(CPPageTemplate.class);
 
 	@Autowired
-	private SubmissionRequestGovernanceMilestoneRepository submissionRequestGovernanceMilestoneRepository;
-
-	@Autowired
-	private CpHelper cpHelper;
+	private CpDataProcessor cpHelper;
 
 	public void addMarketScopeTableForCp(Document document, long requestId, String cpName) throws DocumentException {
 
@@ -40,8 +34,8 @@ public class CPPageTemplate {
 				.filter(dto -> dto.getCpName().equals(cpName)).findFirst().map(MarketScopeDTO::getMarketScope)
 				.orElseThrow(() -> new RuntimeException("cpName not found: {}".concat(cpName)));
 
-		String[][] rowData = getRowDataFromDbResponse(commercialMarketScopes);
-		
+		String[][] rowData = getTableContentForMarketScope(commercialMarketScopes);
+
 		String[] headers = { "Harmonised Market (S) ", "Lead Market", "3 Month Launch Volume (24 EQ)",
 				"Annualised Year 1 Volume (24 EQ)", "Cannabalisation Impact(Total Annual Cases)", "NSV / Case",
 				"COG'S / Case", "Annualised Year 1 NSV (Local Currency)", "Currency in Euros?",
@@ -60,8 +54,8 @@ public class CPPageTemplate {
 				.stream().filter(dto -> dto.getCpName().equals(cpName)).findFirst()
 				.map(DeliverableThresholdDTO::getDeliverableThresholds)
 				.orElseThrow(() -> new RuntimeException("cpName not found: {}".concat(cpName)));
-		
-		String[][] rowData = getRowDataFromDbResponseForDeliverable(commercialDeliveralbeThreshold);
+
+		String[][] rowData = getTableContentForDelveriableThreshold(commercialDeliveralbeThreshold);
 
 		String[] headers = { " ", "NSV Per Case", "GM %", "Target COG`S", "Total Volume", "Unit ROS (UROS)",
 				"Numerical Distribution (ND)" };
@@ -71,34 +65,33 @@ public class CPPageTemplate {
 	public void addPortFolioStartegyForCp0(Document document, long requestId) throws DocumentException {
 
 		float[] columnWidths = { 3.5f, 3.5f, 4f, 5f, 3f, };
-		List<SubmissionRequestGovernanceMilestone> requestData = submissionRequestGovernanceMilestoneRepository
-				.findByIdRequestId(requestId);
 
-		if (requestData.isEmpty() || Utils.isNullOrEmptyObject(requestData.get(0).getSubmissionRequest())) {
-			logger.error("Null or empty Request!!");
-		}
-		SubmissionRequest submissionRequest = requestData.get(0).getSubmissionRequest();
 		String[] headers = { "Incremental Or Replacement SKU?", "What Is The Portfolio Delist Strategy?",
 				"Specific Cut Off Date For Introduction Of New SKU?", "What is driving your launch date?",
 				"Commercial Strategy(Consumer Price Proposal)" };
+		
+		Optional<SubmissionRequest> submissionRequestOpt = cpHelper.getProjectDetailsForCP0(requestId);
+		
+		submissionRequestOpt.ifPresent(submissionRequest -> {
+			String[][] rowData = {
+					{ getValueOrDefault(Optional.ofNullable(submissionRequest.getIncrementalReplacementSku())),
+							getValueOrDefault(Optional.ofNullable(submissionRequest.getPortfolioDelistStrategy())),
+							getValueOrDefault(Optional.ofNullable(submissionRequest.getSpecificSkuCutOffIntro())),
+							getValueOrDefault(
+									Optional.ofNullable(submissionRequest.getSwitchDateAndDrivingDateReason())),
+							getValueOrDefault(Optional.ofNullable(submissionRequest.getCommercialStrategy())) } };
 
-		String[][] rowData = {
-				{ getValueOrDefault(Optional.ofNullable(submissionRequest.getIncrementalReplacementSku())),
-						getValueOrDefault(Optional.ofNullable(submissionRequest.getPortfolioDelistStrategy())),
-						getValueOrDefault(Optional.ofNullable(submissionRequest.getSpecificSkuCutOffIntro())),
-						getValueOrDefault(Optional.ofNullable(submissionRequest.getSwitchDateAndDrivingDateReason())),
-						getValueOrDefault(Optional.ofNullable(submissionRequest.getCommercialStrategy())) } };
-
-		PDfGenerationHelpers.addTableData(document, "Portfolio Strategy :", columnWidths, rowData, headers);
+			PDfGenerationHelpers.addTableData(document, "Portfolio Strategy :", columnWidths, rowData, headers);
+		});
 
 	}
 
 	// Helper function to handle null or empty checks using Optional
-	private String getValueOrDefault(Optional<String> value) {
+	public String getValueOrDefault(Optional<String> value) {
 		return value.filter(v -> !v.trim().isEmpty()).orElse("_");
 	}
 
-	public String[][] getRowDataFromDbResponse(List<MarketScope> commercialMarketScopes) {
+	public String[][] getTableContentForMarketScope(List<MarketScope> commercialMarketScopes) {
 		Function<Object, String> defaultValue = value -> Optional.ofNullable(value).map(String::valueOf).orElse("_");
 
 		return commercialMarketScopes.stream().map(scope -> new String[] { "Default Name",
@@ -112,7 +105,7 @@ public class CPPageTemplate {
 				.toArray(String[][]::new);
 	}
 
-	public String[][] getRowDataFromDbResponseForDeliverable(List<DeliverableThreshold> deliverableThresholds) {
+	public String[][] getTableContentForDelveriableThreshold(List<DeliverableThreshold> deliverableThresholds) {
 		Function<Object, String> defaultValue = value -> Optional.ofNullable(value).map(String::valueOf).orElse("_");
 		AtomicInteger index = new AtomicInteger(0);
 		return deliverableThresholds.stream()

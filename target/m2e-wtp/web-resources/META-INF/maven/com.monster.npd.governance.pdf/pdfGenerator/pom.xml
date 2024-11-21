@@ -10,14 +10,14 @@
 		<version>2.5.6</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.spring-mssql</groupId>
+	<groupId>com.monster.npd.governance.pdf</groupId>
 	<artifactId>pdfGenerator</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>pdfGenerator</name>
+	<name></name>
 	<description>This project for NPD PDF</description>
 	<packaging>war</packaging>
 	<properties>
-		<java.version>11</java.version>
+		<java.version>17</java.version>
 		<log4j2.version>2.12.3</log4j2.version>
 	</properties>
 	<dependencies>
@@ -92,6 +92,12 @@
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-hibernate5</artifactId>
+		</dependency>
+
 
 		<dependency>
 			<groupId>com.itextpdf</groupId>

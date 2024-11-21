@@ -8,6 +8,8 @@ import javax.persistence.Id;
 import javax.persistence.Lob;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -28,6 +30,7 @@ public class SubmissionGovernanceMilestone {
     private String decision;
 
     @Column(name = "Decision_Date")
+	@JsonFormat(pattern = "yyyy-MM-dd")
     private Date decisionDate;
 
     @Column(name = "Target_Start_Date")

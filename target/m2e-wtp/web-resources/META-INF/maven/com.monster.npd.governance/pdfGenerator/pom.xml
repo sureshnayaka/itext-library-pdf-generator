@@ -17,7 +17,7 @@
 	<description>This project for NPD PDF</description>
 	<packaging>war</packaging>
 	<properties>
-		<java.version>11</java.version>
+		<java.version>17</java.version>
 		<log4j2.version>2.12.3</log4j2.version>
 	</properties>
 	<dependencies>

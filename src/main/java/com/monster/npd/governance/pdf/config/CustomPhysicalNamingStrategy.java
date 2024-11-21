@@ -45,6 +45,8 @@ public class CustomPhysicalNamingStrategy implements PhysicalNamingStrategy {
 			String tableNameWithPrefix = UserRequiredORG_ID + tableName;
 			logger.debug("Returning table name with UserRequiredORG_ID prefix: {}", tableNameWithPrefix);
 			return Identifier.toIdentifier(tableNameWithPrefix);
+		} else if (name.getText().equalsIgnoreCase("GOVERNANCE_AUDIT")) {
+			return name;
 		}
 		String tableNameWithPrefix = PREFIX + tableName;
 		logger.debug("Returning table name with default prefix: {}", tableNameWithPrefix);
