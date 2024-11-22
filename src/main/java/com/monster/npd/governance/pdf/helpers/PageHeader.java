@@ -60,7 +60,7 @@ public class PageHeader {
 
 	public static void addPageHeaders(Document document, PageHeaderDetailsDTO headerDetailsDTO)
 			throws DocumentException, IllegalArgumentException, IllegalAccessException {
-		PDfGenerationHelpers.addTitle(document, "Governance PDF Summary", false);
+//		PDfGenerationHelpers.addTitle(document, "Governance PDF Summary", false);
 		float[] columnWidths = { 2f, 3f };
 		PdfPTable table = new PdfPTable(columnWidths);
 		table.setWidthPercentage(50);

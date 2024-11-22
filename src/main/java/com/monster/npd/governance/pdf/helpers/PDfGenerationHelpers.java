@@ -27,6 +27,7 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfPageEventHelper;
 import com.itextpdf.text.pdf.PdfWriter;
+import com.monster.npd.governance.pdf.utils.Utils;
 
 /**
  * @author Suresh this is the helper class used to create the pdf table, cells,
@@ -43,20 +44,12 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	@Override
 	public void onStartPage(PdfWriter writer, Document document) {
 		try {
-			Image logo = loadImage("/assets/header.png");
-			logo.scaleToFit(40, 30);
-			float x = document.left() - 20;
-			float y = document.top() - 10;
-			logo.setAbsolutePosition(x, y);
-			// writer.getDirectContent().addImage(logo);
-
 			setHeader(writer);
 			setBackground(writer);
 
 		} catch (Exception e) {
 			logger.error(e.getLocalizedMessage());
 		}
-
 	}
 
 	public void setBackground(PdfWriter writer) throws DocumentException {
@@ -76,7 +69,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	public void setHeader(PdfWriter writer) throws DocumentException {
 		Image headerImage = loadImage("/assets/backHeader.png");
 
-		float headerHeight = 45f;
+		float headerHeight = 50f;
 
 		headerImage.scaleAbsolute(PageSize.A4.getHeight(), headerHeight);
 
@@ -116,15 +109,13 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	 * To load the image from the provided path
 	 * 
 	 */
-	public Image loadImage(String filePath) {
+	public  Image loadImage(String filePath) {
 		try (InputStream input = getClass().getResourceAsStream(filePath)) {
-			if (input == null) {
-				throw new IOException("Image not found at specified path.");
+			if (!Utils.isNullOrEmptyObject(input)) {
+				return Image.getInstance(input.readAllBytes());
 			}
-			return Image.getInstance(input.readAllBytes());
 		} catch (IOException | BadElementException e) {
 			logger.error("Error loading image: " + e.getMessage());
-			e.printStackTrace();
 		}
 		return null;
 	}
@@ -254,6 +245,77 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			logger.error(e.getMessage());
 		}
 
+	}
+
+	public static void addChunkHeader(Document document, String value) throws DocumentException {
+		Font normalFont = FontFactory.getFont(FontFactory.TIMES_BOLD, 12, BaseColor.BLACK);
+		BaseColor basecolor = new BaseColor(186, 140, 220);
+		if (value.equalsIgnoreCase("CP0")) {
+			value = "CHECKPOINT 0";
+		} else if (value.equalsIgnoreCase("CP1")) {
+			value = "CHECKPOINT 1";
+			basecolor = new BaseColor(68, 114, 196);
+		} else if (value.equalsIgnoreCase("CP2")) {
+			value = "CHECKPOINT 2";
+			basecolor = new BaseColor(255, 253, 2);
+		} else if (value.equalsIgnoreCase("CP3")) {
+			value = "CHECKPOINT 3";
+			basecolor = new BaseColor(0, 176, 240);
+		} else if (value.equalsIgnoreCase("CP4")) {
+			value = "CHECKPOINT 4";
+			basecolor = new BaseColor(140, 216, 114);
+		}
+		Phrase phrase = new Phrase();
+		phrase.add(new Chunk(value, normalFont));
+
+		PdfPCell cell = new PdfPCell(phrase);
+		cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+		cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+		cell.setPadding(5f);
+		cell.setBorderWidth(2);
+		cell.setBackgroundColor(basecolor);
+
+		PdfPTable table = new PdfPTable(1);
+		table.setWidthPercentage(99);
+		table.addCell(cell);
+		table.setSpacingBefore(5f);
+		table.setSpacingAfter(2f);
+		document.add(table);
+	}
+
+	public static void addChunkTable(Document document, String key, String value) throws DocumentException {
+
+		PdfPTable table = new PdfPTable(3);
+		table.setWidthPercentage(99);
+		table.setSpacingBefore(5f);
+		table.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+		float[] columnWidths = { 2f, 0.025f, 4f };
+		table.setWidths(columnWidths);
+
+		PdfPCell firstCell = new PdfPCell(
+				new Phrase(key, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL, BaseColor.WHITE)));
+		firstCell.setBackgroundColor(BaseColor.BLACK);
+		firstCell.setPadding(5f);
+		firstCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+		PdfPCell secondCell = new PdfPCell(
+				new Phrase(value, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL, BaseColor.BLACK)));
+		secondCell.setBorderColor(BaseColor.BLACK);
+		secondCell.setBorderWidth(1f);
+		secondCell.setPadding(5f);
+		secondCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+		PdfPCell spacerCell = new PdfPCell();
+		spacerCell.setBorder(PdfPCell.NO_BORDER);
+
+		// Add cells to table
+		table.addCell(firstCell);
+		table.addCell(spacerCell);
+		table.addCell(secondCell);
+
+		// Add table to document
+		document.add(table);
 	}
 
 }

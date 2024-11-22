@@ -1,6 +1,8 @@
 package com.monster.npd.governance.pdf.service.impl;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,9 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.itextpdf.text.BadElementException;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.Image;
 import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfPageLabels;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.monster.npd.governance.pdf.helpers.CPPageTemplate;
 import com.monster.npd.governance.pdf.helpers.CpDataProcessor;
@@ -80,12 +87,21 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 			PdfWriter writer = PdfWriter.getInstance(document, out);
 			writer.setPageEvent(generationHelpers);
 			document.open();
+			
 
 			PageHeaderDetailsDTO pageHeaderDetailsDTO = pageHeader.getHeaderData(requestId);
-			PageHeader.addPageHeaders(document, pageHeaderDetailsDTO);
+			// PageHeader.addPageHeaders(document, pageHeaderDetailsDTO);
+			Paragraph title = new Paragraph(" ", new Font(Font.FontFamily.TIMES_ROMAN, 9, Font.BOLD));
+//			title.setAlignment(Element.ALIGN_LEFT);
+			title.setSpacingBefore(5f);
+			document.add(title);
+
+			PDfGenerationHelpers.addChunkTable(document, WHY_PROJECT, " ");
+			PDfGenerationHelpers.addChunkTable(document, ABOUT_PROJECT, " ");
+			PDfGenerationHelpers.addChunkTable(document, "Link to stratergy", " ");
 
 			// Initialize the CP data in the document
-			initializeCP(document, cp, requestId);
+			initializeCP(document, cp, requestId, writer);
 
 			// Initialize Governance and Volume Summary in the document
 			initalizeGovernanceAuditAndVolumeSummary(document, requestId);
@@ -131,7 +147,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	 * @param document
 	 * @param cpList
 	 */
-	public void initializeCP(Document document, List<CP> cpList, long requestId) {
+	public void initializeCP(Document document, List<CP> cpList, long requestId, PdfWriter writer) {
 		try {
 			if (cpList.size() <= 0) {
 				throw new DocumentException("Atleast one cpList is required to generate PDF.");
@@ -139,7 +155,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 			cpList.forEach(cpObj -> {
 
 				try {
-					initializeCPDocument(document, cpObj, requestId);
+					initializeCPDocument(document, cpObj, requestId, writer);
 				} catch (DocumentException e) {
 					logger.error("Error initializing CP {}: {}", cpObj.getCpName(), e.getMessage(), e);
 				}
@@ -156,7 +172,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	 * @param cpObj
 	 * @throws DocumentException
 	 */
-	private void initializeCPDocument(Document document, CP cpObj, long requestId) throws DocumentException {
+	private void initializeCPDocument(Document document, CP cpObj, long requestId, PdfWriter writer) throws DocumentException {
 
 		String cpName = cpObj.getCpName();
 
@@ -168,27 +184,63 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 			PDfGenerationHelpers.addTitle(document, cpName.concat(SAME_PREVIOUS_CP), false);
 			return;
 		}
-		addCPContent(document, isActiveCP, requestId, cpName);
+		addCPContent(document, isActiveCP, requestId, cpName, writer);
 	}
 
+	public  Image loadImage(String filePath) {
+		try (InputStream input = getClass().getResourceAsStream(filePath)) {
+			if (!Utils.isNullOrEmptyObject(input)) {
+				return Image.getInstance(input.readAllBytes());
+			}
+		} catch (IOException | BadElementException e) {
+			logger.error("Error loading image: " + e.getMessage());
+		}
+		return null;
+	}
 	/**
 	 * this is to intialzie the CP0 template
 	 * 
 	 * @param document
 	 * @throws DocumentException
 	 */
-	private void addCPContent(Document document, boolean isActive, long requestId, String cpName)
+	private void addCPContent(Document document, boolean isActive, long requestId, String cpName, PdfWriter writer)
 			throws DocumentException {
 		if (!cpName.equalsIgnoreCase(CP0)) {
 			document.newPage();
+			String imagePath = "/assets/"+cpName.toLowerCase()+ ".png";
+			Image logo = loadImage(imagePath);
+			logo.scaleToFit(40, 30);
+			float x = document.right()-15;
+			float y = document.top() - 2;
+			logo.setAbsolutePosition(x, y);
+			writer.getDirectContent().addImage(logo);
 		}
 
-		PDfGenerationHelpers.addTitle(document, cpName, isActive);
+		PDfGenerationHelpers.addChunkHeader(document, cpName);
 		cpPageTemplate.addMarketScopeTableForCp(document, requestId, cpName);
 		cpPageTemplate.addDeliverablesVSThresholdForCp(document, requestId, cpName);
 
 		if (cpName.equalsIgnoreCase(CP0)) {
+			String imagePath = "/assets/"+cpName.toLowerCase()+ ".png";
+			Image logo = loadImage(imagePath);
+			logo.scaleToFit(40, 30);
+			float x = document.right()-15;
+			float y = document.top() - 2;
+			logo.setAbsolutePosition(x, y);
+			writer.getDirectContent().addImage(logo);
 			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+			addProjectDetails(document, requestId);
+
 		} else {
 			PDfGenerationHelpers.addChunkParagraph(document, PM_COMMENTS, "Some comments from Project Managers");
 		}
@@ -197,7 +249,9 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 			cpPageTemplate.addPortFolioStartegyForCp0(document, requestId);
 		}
 
-		PDfGenerationHelpers.addChunkParagraph(document, APPROVER_COMMENTS, "Some comments from approver");
+//		PDfGenerationHelpers.addChunkParagraph(document, APPROVER_COMMENTS, "Some comments from approver");
+		PDfGenerationHelpers.addChunkTable(document, APPROVER_COMMENTS, "Some comments from approver");
+
 	}
 
 	private void addProjectDetails(Document document, long requestId) {
