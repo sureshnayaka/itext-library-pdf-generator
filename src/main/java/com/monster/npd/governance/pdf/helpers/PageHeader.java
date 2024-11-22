@@ -17,7 +17,9 @@ import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Element;
 import com.itextpdf.text.Font;
 import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.Image;
 import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 import com.monster.npd.governance.pdf.pojo.PageHeaderDetailsDTO;
 import com.monster.npd.governance.pdf.pojo.ProgramTag;
 import com.monster.npd.governance.pdf.pojo.ProjectSubType;
@@ -176,6 +178,6 @@ public class PageHeader {
 		        })
 		        .orElse("-");
 		}
-
+	
 
 }

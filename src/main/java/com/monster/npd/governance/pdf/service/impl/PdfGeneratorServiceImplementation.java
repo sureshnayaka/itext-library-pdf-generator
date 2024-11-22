@@ -19,7 +19,6 @@ import com.itextpdf.text.Font;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.PageSize;
 import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.pdf.PdfPageLabels;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.monster.npd.governance.pdf.helpers.CPPageTemplate;
 import com.monster.npd.governance.pdf.helpers.CpDataProcessor;
@@ -28,8 +27,6 @@ import com.monster.npd.governance.pdf.helpers.GovernanceVolumeSummary;
 import com.monster.npd.governance.pdf.helpers.PDfGenerationHelpers;
 import com.monster.npd.governance.pdf.helpers.PageHeader;
 import com.monster.npd.governance.pdf.pojo.CP;
-import com.monster.npd.governance.pdf.pojo.PageHeaderDetailsDTO;
-import com.monster.npd.governance.pdf.pojo.SubmissionRequest;
 import com.monster.npd.governance.pdf.service.PdfGeneratorInterface;
 import com.monster.npd.governance.pdf.utils.Utils;
 
@@ -40,14 +37,18 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 
 	private static final String CP0 = "CP0";
 	private static final String CP1 = "CP1";
-	private static final String WHY_PROJECT = "What is the Project? :";
-	private static final String ABOUT_PROJECT = "What is the commercial benefit of approving this project? :";
+	private static final String WHY_PROJECT = "Why do the Project? :";
+	private static final String WHAT_PROJECT = "What do this project? :";
 	private static final String APPROVER_COMMENTS = "Approver comments :";
 	private static final String PM_COMMENTS = "Project Managers comments :";
 	private static final String GAS = "Governance Audit Summary";
 	private static final String GVS = "Governance Volume Summary";
 
 	private static final String SAME_PREVIOUS_CP = " is same as previous CP";
+
+	private static final String LINK_STRATEGY = "Link to stratergy";
+
+	private static final String CM_COMMENTS = "Commercial comments";
 
 	@Autowired
 	CPPageTemplate cpPageTemplate;
@@ -59,6 +60,8 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	PageHeader pageHeader;
 	@Autowired
 	CpDataProcessor cpHelper;
+	@Autowired
+	PDfGenerationHelpers pDfGenerationHelpers;
 
 	/**
 	 * To generate the CP pdf
@@ -87,18 +90,6 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 			PdfWriter writer = PdfWriter.getInstance(document, out);
 			writer.setPageEvent(generationHelpers);
 			document.open();
-			
-
-			PageHeaderDetailsDTO pageHeaderDetailsDTO = pageHeader.getHeaderData(requestId);
-			// PageHeader.addPageHeaders(document, pageHeaderDetailsDTO);
-			Paragraph title = new Paragraph(" ", new Font(Font.FontFamily.TIMES_ROMAN, 9, Font.BOLD));
-//			title.setAlignment(Element.ALIGN_LEFT);
-			title.setSpacingBefore(5f);
-			document.add(title);
-
-			PDfGenerationHelpers.addChunkTable(document, WHY_PROJECT, " ");
-			PDfGenerationHelpers.addChunkTable(document, ABOUT_PROJECT, " ");
-			PDfGenerationHelpers.addChunkTable(document, "Link to stratergy", " ");
 
 			// Initialize the CP data in the document
 			initializeCP(document, cp, requestId, writer);
@@ -125,7 +116,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	public void initalizeGovernanceAuditAndVolumeSummary(Document document, long requestId) {
 		try {
 			document.newPage();
-
+			addSpacer(document);
 			PDfGenerationHelpers.addTitle(document, GAS, false);
 			governanceAuditSummary.addGovernanceAuditSummary(document, requestId);
 			if (cpHelper.isApprovedCp(requestId)) {
@@ -172,7 +163,8 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	 * @param cpObj
 	 * @throws DocumentException
 	 */
-	private void initializeCPDocument(Document document, CP cpObj, long requestId, PdfWriter writer) throws DocumentException {
+	private void initializeCPDocument(Document document, CP cpObj, long requestId, PdfWriter writer)
+			throws DocumentException {
 
 		String cpName = cpObj.getCpName();
 
@@ -187,7 +179,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		addCPContent(document, isActiveCP, requestId, cpName, writer);
 	}
 
-	public  Image loadImage(String filePath) {
+	public Image loadImage(String filePath) {
 		try (InputStream input = getClass().getResourceAsStream(filePath)) {
 			if (!Utils.isNullOrEmptyObject(input)) {
 				return Image.getInstance(input.readAllBytes());
@@ -197,6 +189,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		}
 		return null;
 	}
+
 	/**
 	 * this is to intialzie the CP0 template
 	 * 
@@ -207,67 +200,62 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 			throws DocumentException {
 		if (!cpName.equalsIgnoreCase(CP0)) {
 			document.newPage();
-			String imagePath = "/assets/"+cpName.toLowerCase()+ ".png";
-			Image logo = loadImage(imagePath);
-			logo.scaleToFit(40, 30);
-			float x = document.right()-15;
-			float y = document.top() - 2;
-			logo.setAbsolutePosition(x, y);
-			writer.getDirectContent().addImage(logo);
 		}
+		pDfGenerationHelpers.setCPHeaderTitleOnTopRight(cpName, document, writer);
+		pDfGenerationHelpers.setCPHeaderImage(cpName, document, writer);
+		pDfGenerationHelpers.setMainHeading(writer, document);
 
-		PDfGenerationHelpers.addChunkHeader(document, cpName);
+		addSpacer(document);
+		PDfGenerationHelpers.addChunkComments(document, WHAT_PROJECT, " ", 50, 2.5f, 0.05f);
+		PDfGenerationHelpers.addChunkComments(document, WHY_PROJECT, " ", 50, 2.5f, 0.05f);
+		PDfGenerationHelpers.addChunkComments(document, LINK_STRATEGY, " ", 50, 2.5f, 0.05f);
+
+		if (!cpName.equalsIgnoreCase(CP0)) {
+			cpPageTemplate.addAnualizedSummaryCheckPoints(document, requestId, cpName);
+		}
+		PDfGenerationHelpers.addChunkHeaderCheckPoint(document, cpName);
 		cpPageTemplate.addMarketScopeTableForCp(document, requestId, cpName);
 		cpPageTemplate.addDeliverablesVSThresholdForCp(document, requestId, cpName);
 
 		if (cpName.equalsIgnoreCase(CP0)) {
-			String imagePath = "/assets/"+cpName.toLowerCase()+ ".png";
-			Image logo = loadImage(imagePath);
-			logo.scaleToFit(40, 30);
-			float x = document.right()-15;
-			float y = document.top() - 2;
-			logo.setAbsolutePosition(x, y);
-			writer.getDirectContent().addImage(logo);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-			addProjectDetails(document, requestId);
-
-		} else {
-			PDfGenerationHelpers.addChunkParagraph(document, PM_COMMENTS, "Some comments from Project Managers");
-		}
-
-		if (cpName.equalsIgnoreCase(CP0) || cpName.equalsIgnoreCase(CP1)) {
 			cpPageTemplate.addPortFolioStartegyForCp0(document, requestId);
 		}
 
-//		PDfGenerationHelpers.addChunkParagraph(document, APPROVER_COMMENTS, "Some comments from approver");
-		PDfGenerationHelpers.addChunkTable(document, APPROVER_COMMENTS, "Some comments from approver");
+		if (!cpName.equalsIgnoreCase(CP0)) {
+			PDfGenerationHelpers.addChunkComments(document, PM_COMMENTS, " ", 100, 1f, 0.015f);
+			PDfGenerationHelpers.addChunkComments(document, CM_COMMENTS, "From “Commercial Rational for changes", 100, 1f,
+					0.015f);
+		}
+
+		PDfGenerationHelpers.addChunkComments(document, APPROVER_COMMENTS, "Some comments from approver", 100, 1f, 0.015f);
 
 	}
 
-	private void addProjectDetails(Document document, long requestId) {
+	public void addSpacer(Document document) {
 
-		Optional<SubmissionRequest> submissionRequestOpt = cpHelper.getProjectDetailsForCP0(requestId);
-		submissionRequestOpt.ifPresent(submissionRequest -> {
-			try {
+		try {
+			Paragraph title = new Paragraph(" ", new Font(Font.FontFamily.TIMES_ROMAN, 9, Font.BOLD));
+			title.setSpacingBefore(10f);
+			document.add(title);
+		} catch (DocumentException e) {
+			e.printStackTrace();
+		}
 
-				PDfGenerationHelpers.addChunkParagraph(document, WHY_PROJECT,
-						" " + cpPageTemplate.getValueOrDefault(Optional.ofNullable(submissionRequest.getWhyProject())));
-				PDfGenerationHelpers.addChunkParagraph(document, ABOUT_PROJECT, " "
-						+ cpPageTemplate.getValueOrDefault(Optional.ofNullable(submissionRequest.getProjectAbout())));
-			} catch (DocumentException e) {
-				logger.error("Error occured in fetching project comments {}", e.getMessage());
-			}
-		});
 	}
-
 }
+
+//private void addProjectDetails(Document document, long requestId) {
+//
+//	Optional<SubmissionRequest> submissionRequestOpt = cpHelper.getProjectDetailsForCP0(requestId);
+//	submissionRequestOpt.ifPresent(submissionRequest -> {
+//		try {
+//
+//			PDfGenerationHelpers.addChunkParagraph(document, WHY_PROJECT,
+//					" " + cpPageTemplate.getValueOrDefault(Optional.ofNullable(submissionRequest.getWhyProject())));
+//			PDfGenerationHelpers.addChunkParagraph(document, ABOUT_PROJECT, " "
+//					+ cpPageTemplate.getValueOrDefault(Optional.ofNullable(submissionRequest.getProjectAbout())));
+//		} catch (DocumentException e) {
+//			logger.error("Error occured in fetching project comments {}", e.getMessage());
+//		}
+//	});
+//}

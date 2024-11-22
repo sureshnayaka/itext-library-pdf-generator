@@ -28,7 +28,7 @@ public class CPPageTemplate {
 
 	public void addMarketScopeTableForCp(Document document, long requestId, String cpName) throws DocumentException {
 
-		float[] columnWidths = { 3f, 2f, 3f, 3f, 2.5f, 2f, 2f, 3f, 2.5f, 3f, 3.5f, 3.8f, 3.5f };
+		float[] columnWidths = { 3f, 2f, 3f, 3f, 2.5f, 2f, 2f, 2.5f, 3f, 3.5f, 3.8f, 3.5f };
 
 		List<MarketScope> commercialMarketScopes = cpHelper.getMarketScopeById(requestId).stream()
 				.filter(dto -> dto.getCpName().equals(cpName)).findFirst().map(MarketScopeDTO::getMarketScope)
@@ -37,9 +37,9 @@ public class CPPageTemplate {
 		String[][] rowData = getTableContentForMarketScope(commercialMarketScopes);
 
 		String[] headers = { "Harmonised Market (S) ", "Lead Market", "3 Month Launch Volume (24 EQ)",
-				"Annualised Year 1 Volume (24 EQ)", "Cannabalisation Impact(Total Annual Cases)", "NSV / Case",
-				"COG'S / Case", "Annualised Year 1 NSV (Local Currency)", "Currency in Euros?",
-				"Annualised Year 1 NSV (EURO)", "Gross Profit", "Gross Margin", "Target DP in Warehouse Week/Year" };
+				"Annualised Year 1 Volume (24 EQ)", "Cannibalisaiton Impact (24 Eq", "NSV / Case",
+				"COG'S / Case (Euro)", "Annualised Year 1 NSV (Local Currency)", "Annualised Year 1 NSV (EURO)",
+				"Gross Profit (EURO)", "Gross Margin", "Target DP in Warehouse Week/Year" };
 
 		PDfGenerationHelpers.addTableData(document, "Market-scope", columnWidths, rowData, headers);
 
@@ -57,21 +57,21 @@ public class CPPageTemplate {
 
 		String[][] rowData = getTableContentForDelveriableThreshold(commercialDeliveralbeThreshold);
 
-		String[] headers = { " ", "NSV Per Case", "GM %", "Target COG`S", "Total Volume", "Unit ROS (UROS)",
+		String[] headers = { " ", "NSV Per Case", "GM %", "Target COG`S", "Total Volume", "Unit ROS UROS",
 				"Numerical Distribution (ND)" };
 		PDfGenerationHelpers.addTableData(document, "Deliverables V/S Thresholds:", columnWidths, rowData, headers);
 	}
 
 	public void addPortFolioStartegyForCp0(Document document, long requestId) throws DocumentException {
 
-		float[] columnWidths = { 3.5f, 3.5f, 4f, 5f, 3f, };
+		float[] columnWidths = { 3.5f, 3.5f, 3f, 3f, 5f, };
 
 		String[] headers = { "Incremental Or Replacement SKU?", "What Is The Portfolio Delist Strategy?",
-				"Specific Cut Off Date For Introduction Of New SKU?", "What is driving your launch date?",
+				"SKU introduction / change approach", "What is driving your launch date?",
 				"Commercial Strategy(Consumer Price Proposal)" };
-		
+
 		Optional<SubmissionRequest> submissionRequestOpt = cpHelper.getProjectDetailsForCP0(requestId);
-		
+
 		submissionRequestOpt.ifPresent(submissionRequest -> {
 			String[][] rowData = {
 					{ getValueOrDefault(Optional.ofNullable(submissionRequest.getIncrementalReplacementSku())),
@@ -84,6 +84,24 @@ public class CPPageTemplate {
 			PDfGenerationHelpers.addTableData(document, "Portfolio Strategy :", columnWidths, rowData, headers);
 		});
 
+	}
+
+	public void addAnualizedSummaryCheckPoints(Document document, long requestId, String cpName)
+			throws DocumentException {
+
+		float[] columnWidths = { 2.5f, 2.5f, 2.5f, 2.5f, 2f, 2f };
+
+		List<DeliverableThreshold> commercialDeliveralbeThreshold = cpHelper.getDeliverableThresholdById(requestId)
+				.stream().filter(dto -> dto.getCpName().equals(cpName)).findFirst()
+				.map(DeliverableThresholdDTO::getDeliverableThresholds)
+				.orElseThrow(() -> new RuntimeException("cpName not found: {}".concat(cpName)));
+
+		String[][] rowData = getTableContentForDelveriableThreshold(commercialDeliveralbeThreshold);
+
+		String[] headers = { "Checkpoint ", "Annualised Vol [24 Eq cases]", "% Volume v/s Prior CP",
+				"Anualised NSV [€]", "GM%", "Aligned DP Date" };
+		PDfGenerationHelpers.addTableData(document, "Summary changes versus last checkpoint", columnWidths, rowData,
+				headers);
 	}
 
 	// Helper function to handle null or empty checks using Optional
@@ -99,7 +117,7 @@ public class CPPageTemplate {
 				defaultValue.apply(scope.getAnnualisedYear1Volume()),
 				defaultValue.apply(scope.getCannibalisationImpact()), defaultValue.apply(scope.getNsvCase()),
 				defaultValue.apply(scope.getCogCase()), defaultValue.apply(scope.getAnnualisedYear1NSVLocalCurrency()),
-				defaultValue.apply(scope.getEnterCurrencyDirectlyInEuros()),
+//				defaultValue.apply(scope.getEnterCurrencyDirectlyInEuros()),
 				defaultValue.apply(scope.getAnnualisedYear1NSVEuro()), defaultValue.apply(scope.getGrossProfit()),
 				defaultValue.apply(scope.getGrossMargin()), defaultValue.apply(scope.getTargetDPInWarehouse()) })
 				.toArray(String[][]::new);

@@ -21,6 +21,7 @@ import com.itextpdf.text.PageSize;
 import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.Phrase;
 import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfGState;
 import com.itextpdf.text.pdf.PdfPCell;
@@ -67,15 +68,18 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	}
 
 	public void setHeader(PdfWriter writer) throws DocumentException {
-		Image headerImage = loadImage("/assets/backHeader.png");
+		Image headerImage = loadImage("/assets/headerM.png");
 
-		float headerHeight = 50f;
+		float headerHeight = 45f;
+		PdfGState gState = new PdfGState();
+		gState.setFillOpacity(0.9f); // Set opacity to 50%
 
 		headerImage.scaleAbsolute(PageSize.A4.getHeight(), headerHeight);
 
 		headerImage.setAbsolutePosition(0, PageSize.A4.getWidth() - headerHeight);
 
 		PdfContentByte canvas = writer.getDirectContentUnder();
+		canvas.setGState(gState);
 		canvas.addImage(headerImage);
 	}
 
@@ -109,7 +113,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	 * To load the image from the provided path
 	 * 
 	 */
-	public  Image loadImage(String filePath) {
+	public Image loadImage(String filePath) {
 		try (InputStream input = getClass().getResourceAsStream(filePath)) {
 			if (!Utils.isNullOrEmptyObject(input)) {
 				return Image.getInstance(input.readAllBytes());
@@ -179,7 +183,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		cell.setHorizontalAlignment(Element.ALIGN_LEFT);
 
 		PdfPTable table = new PdfPTable(1);
-		table.setWidthPercentage(99);
+		table.setWidthPercentage(100);
 		table.addCell(cell);
 		table.setSpacingBefore(2f);
 		document.add(table);
@@ -216,11 +220,11 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			cell.setBorderColor(BaseColor.WHITE);
 			if (i == 0) {
 				cell.setBorderColorLeft(BaseColor.BLACK);
-				cell.setBorderWidthLeft(10f);
+				cell.setBorderWidthLeft(20f);
 
 			} else if (i == headers.length - 1) {
 				cell.setBorderColorRight(BaseColor.BLACK);
-				cell.setBorderWidthRight(10f);
+				cell.setBorderWidthRight(20f);
 			}
 
 			table.addCell(cell);
@@ -232,7 +236,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		try {
 
 			PdfPTable table = new PdfPTable(columnWidths);
-			table.setWidthPercentage(99);
+			table.setWidthPercentage(100);
 			table.setHorizontalAlignment(Element.ALIGN_CENTER);
 			addHeaderTitles(document, tableName);
 
@@ -247,64 +251,39 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 
 	}
 
-	public static void addChunkHeader(Document document, String value) throws DocumentException {
-		Font normalFont = FontFactory.getFont(FontFactory.TIMES_BOLD, 12, BaseColor.BLACK);
-		BaseColor basecolor = new BaseColor(186, 140, 220);
-		if (value.equalsIgnoreCase("CP0")) {
-			value = "CHECKPOINT 0";
-		} else if (value.equalsIgnoreCase("CP1")) {
-			value = "CHECKPOINT 1";
-			basecolor = new BaseColor(68, 114, 196);
-		} else if (value.equalsIgnoreCase("CP2")) {
-			value = "CHECKPOINT 2";
-			basecolor = new BaseColor(255, 253, 2);
-		} else if (value.equalsIgnoreCase("CP3")) {
-			value = "CHECKPOINT 3";
-			basecolor = new BaseColor(0, 176, 240);
-		} else if (value.equalsIgnoreCase("CP4")) {
-			value = "CHECKPOINT 4";
-			basecolor = new BaseColor(140, 216, 114);
-		}
-		Phrase phrase = new Phrase();
-		phrase.add(new Chunk(value, normalFont));
+	public static void addChunkHeaderCheckPoint(Document document, String value) throws DocumentException {
 
-		PdfPCell cell = new PdfPCell(phrase);
-		cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-		cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-		cell.setPadding(5f);
-		cell.setBorderWidth(2);
-		cell.setBackgroundColor(basecolor);
-
-		PdfPTable table = new PdfPTable(1);
-		table.setWidthPercentage(99);
-		table.addCell(cell);
-		table.setSpacingBefore(5f);
-		table.setSpacingAfter(2f);
-		document.add(table);
-	}
-
-	public static void addChunkTable(Document document, String key, String value) throws DocumentException {
-
+		BaseColor baseColor = new BaseColor(186, 140, 220);
+		CheckpointHandler.CheckpointDetails details = CheckpointHandler.getCheckpointDetails(value);
+		value = details.getName(); // Dynamically fetched checkpoint name
+		baseColor = details.getBaseColor(); // Dynamically fetched BaseColor
 		PdfPTable table = new PdfPTable(3);
-		table.setWidthPercentage(99);
+		table.setWidthPercentage(100);
 		table.setSpacingBefore(5f);
 		table.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-		float[] columnWidths = { 2f, 0.025f, 4f };
+		float[] columnWidths = { 4f, 0f, 3f };
 		table.setWidths(columnWidths);
 
 		PdfPCell firstCell = new PdfPCell(
-				new Phrase(key, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL, BaseColor.WHITE)));
+				new Phrase(value, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD, BaseColor.BLACK)));
 		firstCell.setBackgroundColor(BaseColor.BLACK);
-		firstCell.setPadding(5f);
-		firstCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+		firstCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+		firstCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+		firstCell.setPaddingBottom(6);
+		firstCell.setFixedHeight(20);
+		firstCell.setBackgroundColor(baseColor);
+		firstCell.setBorderWidth(1.5f);
+		firstCell.setBorderWidthRight(0f);
 
-		PdfPCell secondCell = new PdfPCell(
-				new Phrase(value, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL, BaseColor.BLACK)));
+		PdfPCell secondCell = new PdfPCell(new Phrase("Approved Date :12/12/2024",
+				new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD, BaseColor.BLACK)));
 		secondCell.setBorderColor(BaseColor.BLACK);
-		secondCell.setBorderWidth(1f);
-		secondCell.setPadding(5f);
-		secondCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+		secondCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+		secondCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+		secondCell.setPaddingBottom(6);
+		secondCell.setBackgroundColor(baseColor);
+		secondCell.setBorderWidth(1.5f);
+		secondCell.setBorderWidthLeft(0f);
 
 		PdfPCell spacerCell = new PdfPCell();
 		spacerCell.setBorder(PdfPCell.NO_BORDER);
@@ -318,4 +297,102 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		document.add(table);
 	}
 
+	public static void addChunkComments(Document document, String key, String value, int tableWidth, float cellwdith,
+			float spaceWidth) throws DocumentException {
+
+		PdfPTable table = new PdfPTable(3);
+		table.setWidthPercentage(tableWidth);
+		table.setSpacingBefore(5f);
+		table.setHorizontalAlignment(Element.ANCHOR);
+		float[] columnWidths = { cellwdith, spaceWidth, 4f };
+		table.setWidths(columnWidths);
+
+		PdfPCell firstCell = new PdfPCell(
+				new Phrase(key, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL, BaseColor.WHITE)));
+		firstCell.setBackgroundColor(BaseColor.BLACK);
+		firstCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+		firstCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+		firstCell.setPaddingBottom(6);
+		firstCell.setFixedHeight(20);
+
+		PdfPCell secondCell = new PdfPCell(
+				new Phrase(value, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL, BaseColor.BLACK)));
+		secondCell.setBorderColor(BaseColor.BLACK);
+		secondCell.setBorderWidth(1f);
+		secondCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+		secondCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+		secondCell.setPaddingBottom(6);
+
+		PdfPCell spacerCell = new PdfPCell();
+		spacerCell.setBorder(PdfPCell.NO_BORDER);
+
+		// Add cells to table
+		table.addCell(firstCell);
+		table.addCell(spacerCell);
+		table.addCell(secondCell);
+
+		// Add table to document
+		document.add(table);
+	}
+
+	public void setCPHeaderTitleOnTopRight(String cpName, Document document, PdfWriter writer) {
+		try {
+			BaseFont baseFont = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
+			float x = document.right() - 250;
+			float y = document.top() - 90;
+			PdfContentByte canvas = writer.getDirectContent();
+			int fontSize = 14;
+			float textWidth = 50f;
+			float textHeight = 34f;
+
+			CheckpointHandler.CheckpointDetails details = CheckpointHandler.getCheckpointDetails(cpName);
+			BaseColor baseColor = details.getBaseColor();
+			canvas.setColorFill(baseColor);
+			float rectX = x + 250 - textWidth / 2;
+			float rectY = y + 105 - textHeight / 2;
+			canvas.rectangle(rectX, rectY, textWidth, textHeight);
+			canvas.fill();
+			canvas.beginText();
+			canvas.setFontAndSize(baseFont, fontSize);
+			canvas.setColorFill(BaseColor.BLACK);
+			canvas.setLineDash(2);
+			canvas.showTextAligned(Element.ALIGN_CENTER, cpName, x + 250, y + 100, 0);
+			canvas.endText();
+		} catch (Exception exception) {
+			logger.error(exception.getMessage());
+		}
+	}
+
+	public void setCPHeaderImage(String cpName, Document document, PdfWriter writer) {
+		try {
+			String imagePath = "/assets/upload.png";
+			Image logo = loadImage(imagePath);
+			logo.scaleToFit(120, 120);
+			float x = document.right() - 250;
+			float y = document.top() - 90;
+			logo.setAbsolutePosition(x, y);
+			writer.getDirectContent().addImage(logo);
+
+		} catch (DocumentException exception) {
+			logger.error(exception.getMessage());
+		}
+	}
+
+	public void setMainHeading(PdfWriter writer, Document document) {
+		try {
+			float x = document.right() - 250;
+			float y = document.top() - 90;
+			PdfContentByte canvas = writer.getDirectContent();
+
+			canvas.beginText();
+			BaseFont baseFont = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
+			canvas.setFontAndSize(baseFont, 14);
+			canvas.setColorFill(BaseColor.WHITE);
+			canvas.showTextAligned(Element.ALIGN_CENTER,
+					"[Market][Brand][Platform][Variant]-[SKU Details][Primary Package type]", x - 250, y + 100, 0);
+			canvas.endText();
+		} catch (DocumentException | IOException e) {
+			logger.error(e.getLocalizedMessage());
+		}
+	}
 }
