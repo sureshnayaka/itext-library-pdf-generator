@@ -83,8 +83,8 @@ public class PdfController {
 	}
 
 	@GetMapping("/marktet")
-	public ResponseEntity<List<MarketScope>> getMArketScope() {
-		return ResponseEntity.ok().body(marketScopeRepository.findAll());
+	public ResponseEntity<List<?>> getMArketScope() {
+		return ResponseEntity.ok().body(submissionsRequestRepository.getAllSubmissionsById(16387L));
 
 	}
 

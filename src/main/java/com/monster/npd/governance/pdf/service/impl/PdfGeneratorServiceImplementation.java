@@ -52,6 +52,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	PageHeader pageHeader;
 	@Autowired
 	CpDataProcessor cpHelper;
+	
 
 	/**
 	 * To generate the CP pdf
@@ -205,7 +206,6 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		Optional<SubmissionRequest> submissionRequestOpt = cpHelper.getProjectDetailsForCP0(requestId);
 		submissionRequestOpt.ifPresent(submissionRequest -> {
 			try {
-
 				PDfGenerationHelpers.addChunkParagraph(document, WHY_PROJECT,
 						" " + cpPageTemplate.getValueOrDefault(Optional.ofNullable(submissionRequest.getWhyProject())));
 				PDfGenerationHelpers.addChunkParagraph(document, ABOUT_PROJECT, " "
@@ -216,4 +216,5 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		});
 	}
 
+	
 }

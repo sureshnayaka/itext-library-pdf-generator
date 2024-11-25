@@ -3,6 +3,8 @@ package com.monster.npd.governance.pdf.pojo;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import lombok.Getter;
@@ -140,6 +142,8 @@ public class SubmissionRequest {
 
 	@Column(name = "ProgramTag", length = 128)
 	private String programTag;
+
+	
 
 //    @Column(name = "Registration_Classification_Available")
 //    private Boolean registrationClassificationAvailable;
@@ -301,3 +305,16 @@ public class SubmissionRequest {
 //    private Date rPoRaPeerId;
 
 }
+
+
+//@ManyToOne
+//@JoinColumn(name = "R_PO_CP_PROJECT_TYPE_Id", referencedColumnName = "id", insertable = false, updatable = false)
+//private ProjectType projectType;
+//
+//@ManyToOne
+//@JoinColumn(name = "R_PO_PROGRAM_TAG_Id", referencedColumnName = "id", insertable = false, updatable = false)
+//private ProgramTag programTag;
+//
+//@ManyToOne
+//@JoinColumn(name = "R_PO_PROJECT_SUB_TYPE_Id", referencedColumnName = "id", insertable = false, updatable = false)
+//private ProjectSubType subType;
