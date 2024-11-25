@@ -14,8 +14,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.monster.npd.governance.pdf.pojo.CP;
 import com.monster.npd.governance.pdf.pojo.CheckpointData;
 import com.monster.npd.governance.pdf.pojo.DeliverableThresholdDTO;

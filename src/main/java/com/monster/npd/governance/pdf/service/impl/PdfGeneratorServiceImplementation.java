@@ -213,7 +213,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		if (!cpName.equalsIgnoreCase(CP0)) {
 			cpPageTemplate.addAnualizedSummaryCheckPoints(document, requestId, cpName);
 		}
-		PDfGenerationHelpers.addChunkHeaderCheckPoint(document, cpName);
+		PDfGenerationHelpers.addChunkHeaderCheckPoint(document, cpName, " ");
 		cpPageTemplate.addMarketScopeTableForCp(document, requestId, cpName);
 		cpPageTemplate.addDeliverablesVSThresholdForCp(document, requestId, cpName);
 
@@ -223,11 +223,12 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 
 		if (!cpName.equalsIgnoreCase(CP0)) {
 			PDfGenerationHelpers.addChunkComments(document, PM_COMMENTS, " ", 100, 1f, 0.015f);
-			PDfGenerationHelpers.addChunkComments(document, CM_COMMENTS, "From “Commercial Rational for changes", 100, 1f,
-					0.015f);
+			PDfGenerationHelpers.addChunkComments(document, CM_COMMENTS, "From “Commercial Rational for changes", 100,
+					1f, 0.015f);
 		}
 
-		PDfGenerationHelpers.addChunkComments(document, APPROVER_COMMENTS, "Some comments from approver", 100, 1f, 0.015f);
+		PDfGenerationHelpers.addChunkComments(document, APPROVER_COMMENTS, "Some comments from approver", 100, 1f,
+				0.015f);
 
 	}
 

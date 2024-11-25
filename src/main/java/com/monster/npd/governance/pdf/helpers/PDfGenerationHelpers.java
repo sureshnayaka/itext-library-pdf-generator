@@ -251,7 +251,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 
 	}
 
-	public static void addChunkHeaderCheckPoint(Document document, String value) throws DocumentException {
+	public static void addChunkHeaderCheckPoint(Document document, String value, String approvedDate) throws DocumentException {
 
 		BaseColor baseColor = new BaseColor(186, 140, 220);
 		CheckpointHandler.CheckpointDetails details = CheckpointHandler.getCheckpointDetails(value);
@@ -275,7 +275,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		firstCell.setBorderWidth(1.5f);
 		firstCell.setBorderWidthRight(0f);
 
-		PdfPCell secondCell = new PdfPCell(new Phrase("Approved Date :12/12/2024",
+		PdfPCell secondCell = new PdfPCell(new Phrase(approvedDate,
 				new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD, BaseColor.BLACK)));
 		secondCell.setBorderColor(BaseColor.BLACK);
 		secondCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
