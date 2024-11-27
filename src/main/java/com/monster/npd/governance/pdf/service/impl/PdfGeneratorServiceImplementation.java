@@ -1,24 +1,22 @@
 package com.monster.npd.governance.pdf.service.impl;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.itextpdf.text.BadElementException;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.Image;
 import com.itextpdf.text.PageSize;
-import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.monster.npd.governance.pdf.helpers.CPPageTemplate;
 import com.monster.npd.governance.pdf.helpers.CpDataProcessor;
@@ -27,6 +25,8 @@ import com.monster.npd.governance.pdf.helpers.GovernanceVolumeSummary;
 import com.monster.npd.governance.pdf.helpers.PDfGenerationHelpers;
 import com.monster.npd.governance.pdf.helpers.PageHeader;
 import com.monster.npd.governance.pdf.pojo.CP;
+import com.monster.npd.governance.pdf.pojo.SubmissionGovernanceMilestone;
+import com.monster.npd.governance.pdf.pojo.SubmissionRequestGovernanceMilestone;
 import com.monster.npd.governance.pdf.service.PdfGeneratorInterface;
 import com.monster.npd.governance.pdf.utils.Utils;
 
@@ -69,7 +69,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	 * @return bytes array
 	 * @throws Exception
 	 */
-	public byte[] generatePdf(long requestId) {
+	public byte[] generatePdf(long requestId, HttpHeaders headers) {
 
 		Document document = new Document(PageSize.A4.rotate());
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -79,7 +79,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 				throw new NullPointerException("Empty request id");
 			}
 
-			List<CP> cp = cpHelper.getCpByRequestId(requestId);
+			List<CP> cp = cpHelper.getCPListForPdfGeneration(requestId);
 
 			// Check if the cp list is null or empty and throw an error
 			if (cp == null || cp.isEmpty()) {
@@ -90,12 +90,16 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 			PdfWriter writer = PdfWriter.getInstance(document, out);
 			writer.setPageEvent(generationHelpers);
 			document.open();
-
+			String header = pageHeader.setMainHeading(writer, document, requestId);
 			// Initialize the CP data in the document
 			initializeCP(document, cp, requestId, writer);
+			// initalizeGovernanceAuditAndVolumeSummary(document, requestId);
 
-			// Initialize Governance and Volume Summary in the document
-			initalizeGovernanceAuditAndVolumeSummary(document, requestId);
+			headers.setContentType(MediaType.APPLICATION_PDF);
+			String fileName = requestId + "-" + header + "CP-0" + "-"
+					+ new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".pdf";
+
+			headers.setContentDispositionFormData("attachment", fileName);
 			logger.info("Successfully Generated PDF!!");
 
 		} catch (Exception e) {
@@ -116,7 +120,6 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	public void initalizeGovernanceAuditAndVolumeSummary(Document document, long requestId) {
 		try {
 			document.newPage();
-			addSpacer(document);
 			PDfGenerationHelpers.addTitle(document, GAS, false);
 			governanceAuditSummary.addGovernanceAuditSummary(document, requestId);
 			if (cpHelper.isApprovedCp(requestId)) {
@@ -179,17 +182,6 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		addCPContent(document, isActiveCP, requestId, cpName, writer);
 	}
 
-	public Image loadImage(String filePath) {
-		try (InputStream input = getClass().getResourceAsStream(filePath)) {
-			if (!Utils.isNullOrEmptyObject(input)) {
-				return Image.getInstance(input.readAllBytes());
-			}
-		} catch (IOException | BadElementException e) {
-			logger.error("Error loading image: " + e.getMessage());
-		}
-		return null;
-	}
-
 	/**
 	 * this is to intialzie the CP0 template
 	 * 
@@ -199,30 +191,34 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	private void addCPContent(Document document, boolean isActive, long requestId, String cpName, PdfWriter writer)
 			throws DocumentException {
 		if (!cpName.equalsIgnoreCase(CP0)) {
-			document.newPage();
-		}
-		pDfGenerationHelpers.setCPHeaderTitleOnTopRight(cpName, document, writer);
-		pDfGenerationHelpers.setCPHeaderImage(cpName, document, writer);
-		pDfGenerationHelpers.setMainHeading(writer, document);
 
-		addSpacer(document);
-		PDfGenerationHelpers.addChunkComments(document, WHAT_PROJECT, " ", 50, 2.5f, 0.05f);
-		PDfGenerationHelpers.addChunkComments(document, WHY_PROJECT, " ", 50, 2.5f, 0.05f);
-		PDfGenerationHelpers.addChunkComments(document, LINK_STRATEGY, " ", 50, 2.5f, 0.05f);
+			document.newPage();
+
+		}
+		pDfGenerationHelpers.setCPHeaderImage(cpName, document, writer);
+		pDfGenerationHelpers.setCPHeaderTitleOnTopRight(cpName, document, writer);
+
+		PDfGenerationHelpers.addChunkComments(document, WHAT_PROJECT, "N/A", 50, 2.5f, 0.05f);
+		PDfGenerationHelpers.addChunkComments(document, WHY_PROJECT, "N/A", 50, 2.5f, 0.05f);
+		PDfGenerationHelpers.addChunkComments(document, LINK_STRATEGY, "N/A", 50, 2.5f, 0.05f);
 
 		if (!cpName.equalsIgnoreCase(CP0)) {
 			cpPageTemplate.addAnualizedSummaryCheckPoints(document, requestId, cpName);
 		}
-		PDfGenerationHelpers.addChunkHeaderCheckPoint(document, cpName, " ");
+		List<SubmissionRequestGovernanceMilestone> governanceMilestones = cpHelper.getCPApprovedDate(requestId, cpName);
+		String approvedDate = getDecisionDateString(governanceMilestones);
+
+		PDfGenerationHelpers.addChunkHeaderCheckPoint(document, cpName, approvedDate);// Apprvoed Date
 		cpPageTemplate.addMarketScopeTableForCp(document, requestId, cpName);
 		cpPageTemplate.addDeliverablesVSThresholdForCp(document, requestId, cpName);
 
 		if (cpName.equalsIgnoreCase(CP0)) {
 			cpPageTemplate.addPortFolioStartegyForCp0(document, requestId);
+
 		}
 
 		if (!cpName.equalsIgnoreCase(CP0)) {
-			PDfGenerationHelpers.addChunkComments(document, PM_COMMENTS, " ", 100, 1f, 0.015f);
+			PDfGenerationHelpers.addChunkComments(document, PM_COMMENTS, "N/A", 100, 1f, 0.015f);
 			PDfGenerationHelpers.addChunkComments(document, CM_COMMENTS, "From “Commercial Rational for changes", 100,
 					1f, 0.015f);
 		}
@@ -232,19 +228,21 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 
 	}
 
-	public void addSpacer(Document document) {
+	public static String getDecisionDateString(List<SubmissionRequestGovernanceMilestone> governanceMilestones) {
+		if (governanceMilestones != null && !governanceMilestones.isEmpty()) {
+			SubmissionRequestGovernanceMilestone firstMilestone = governanceMilestones.get(0);
+			if (firstMilestone != null && firstMilestone.getGovernanceMilestone() != null) {
+				SubmissionGovernanceMilestone milestone = firstMilestone.getGovernanceMilestone();
 
-		try {
-			Paragraph title = new Paragraph(" ", new Font(Font.FontFamily.TIMES_ROMAN, 9, Font.BOLD));
-			title.setSpacingBefore(10f);
-			document.add(title);
-		} catch (DocumentException e) {
-			e.printStackTrace();
+				if (milestone.getDecisionDate() != null) {
+					return "Approved : " + CpDataProcessor.extractDate(milestone.getDecisionDate().toString());
+				}
+			}
 		}
 
+		return " ";
 	}
 }
-
 //private void addProjectDetails(Document document, long requestId) {
 //
 //	Optional<SubmissionRequest> submissionRequestOpt = cpHelper.getProjectDetailsForCP0(requestId);

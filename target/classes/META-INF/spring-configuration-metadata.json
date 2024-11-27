@@ -1,0 +1,37 @@
+{
+  "groups": [
+    {
+      "name": "deliverable.threshold",
+      "type": "com.monster.npd.governance.pdf.table.config.DeliverableThresholdTableFieldConfig",
+      "sourceType": "com.monster.npd.governance.pdf.table.config.DeliverableThresholdTableFieldConfig"
+    },
+    {
+      "name": "market.scope",
+      "type": "com.monster.npd.governance.pdf.table.config.MarketScopeTableFieldConfig",
+      "sourceType": "com.monster.npd.governance.pdf.table.config.MarketScopeTableFieldConfig"
+    },
+    {
+      "name": "portfolio",
+      "type": "com.monster.npd.governance.pdf.table.config.PortfolioTableFieldConfig",
+      "sourceType": "com.monster.npd.governance.pdf.table.config.PortfolioTableFieldConfig"
+    }
+  ],
+  "properties": [
+    {
+      "name": "deliverable.threshold.headers",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "com.monster.npd.governance.pdf.table.config.DeliverableThresholdTableFieldConfig"
+    },
+    {
+      "name": "market.scope.headers",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "com.monster.npd.governance.pdf.table.config.MarketScopeTableFieldConfig"
+    },
+    {
+      "name": "portfolio.headers",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "com.monster.npd.governance.pdf.table.config.PortfolioTableFieldConfig"
+    }
+  ],
+  "hints": []
+}

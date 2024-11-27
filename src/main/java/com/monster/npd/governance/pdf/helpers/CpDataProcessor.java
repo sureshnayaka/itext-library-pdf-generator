@@ -1,6 +1,9 @@
 package com.monster.npd.governance.pdf.helpers;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,11 +31,15 @@ import com.monster.npd.governance.pdf.repository.DeliverableThresholdRepository;
 import com.monster.npd.governance.pdf.repository.GovernanceAuditSummaryRepository;
 import com.monster.npd.governance.pdf.repository.MarketScopeRepository;
 import com.monster.npd.governance.pdf.repository.SubmissionRequestGovernanceMilestoneRepository;
+import com.monster.npd.governance.pdf.repository.SubmissionsRequestRepository;
 
 @Component
 public class CpDataProcessor {
 
 	private static final Logger logger = LogManager.getLogger(CpDataProcessor.class);
+
+	private static final String APPROVED = "Approved";
+	private static final String CPS = "CP";
 
 	@Autowired
 	private SubmissionRequestGovernanceMilestoneRepository submissionRequestGovernanceMilestoneRepository;
@@ -46,10 +53,14 @@ public class CpDataProcessor {
 	@Autowired
 	private GovernanceAuditSummaryRepository auditSummaryRepository;
 
-	public List<CP> getCpByRequestId(long requestId) {
+	@Autowired
+	private SubmissionsRequestRepository submissionRequestRepository;
+
+	public List<CP> getCPListForPdfGeneration(long requestId) {
 		List<CP> cps = new ArrayList<>();
 
 		try {
+
 			List<SubmissionRequestGovernanceMilestone> submissionRequest = submissionRequestGovernanceMilestoneRepository
 					.findByIdRequestId(requestId);
 
@@ -62,25 +73,28 @@ public class CpDataProcessor {
 				SubmissionGovernanceMilestone governanceMilestone = request.getGovernanceMilestone();
 				String currentCheckpoint = request.getSubmissionRequest().getCurrentCheckpoint();
 				boolean isActiveCP = Optional.ofNullable(governanceMilestone)
-						.map(g -> g.getStage().contains(currentCheckpoint)).orElse(false);
-				// return false if stage or currentCheckpoint is null
+						.map(governance -> governance.getStage().contains(currentCheckpoint)).orElse(false);
 
 				cps.add(new CP(governanceMilestone.getStage(), false, isActiveCP));
 			}
+//			cps = cps = cps.stream()
+//			         .sorted(Comparator.comparing(CP::getCpName).reversed())
+//			         .collect(Collectors.toList());
+
+
 		} catch (Exception e) {
 			logger.error("Error occurred while fetching CP data for requestId {}: {}", requestId, e.getMessage(), e);
 		}
-
 		return cps;
 	}
 
-	public List<MarketScopeDTO> getMarketScopeById(long requestId) {
-		return fetchAndMapToDTO(requestId, commercialMarketScopeRepository::findByPoGovernanceMSId,
+	public List<MarketScopeDTO> getMarketScopeById(long governanceId) {
+		return fetchAndMapToDTO(governanceId, commercialMarketScopeRepository::findByPoGovernanceMSId,
 				MarketScopeDTO::new);
 	}
 
-	public List<DeliverableThresholdDTO> getDeliverableThresholdById(long requestId) {
-		return fetchAndMapToDTO(requestId, deliverableThresholdRepository::findByPoGovernanceMSId,
+	public List<DeliverableThresholdDTO> getDeliverableThresholdById(long governanceId) {
+		return fetchAndMapToDTO(governanceId, deliverableThresholdRepository::findByPoGovernanceMSId,
 				DeliverableThresholdDTO::new);
 	}
 
@@ -116,8 +130,8 @@ public class CpDataProcessor {
 	public boolean isApprovedCp(long requestId) {
 		getCPforVolumeSummary(requestId);
 		return submissionRequestGovernanceMilestoneRepository.findByIdRequestId(requestId).stream()
-				.anyMatch(request -> "CP0".equalsIgnoreCase(request.getGovernanceMilestone().getStage())
-						&& "Approved".equalsIgnoreCase(request.getGovernanceMilestone().getDecision()));
+				.anyMatch(request -> CPS.concat("0").equalsIgnoreCase(request.getGovernanceMilestone().getStage())
+						&& APPROVED.equalsIgnoreCase(request.getGovernanceMilestone().getDecision()));
 	}
 
 	public Map<String, CheckpointData> getCPforVolumeSummary(long requestId) {
@@ -132,7 +146,7 @@ public class CpDataProcessor {
 					boolean matchesCheckpoint = cp != null && cp.contains(currentCheckpoint);
 
 					// Condition 2: Decision is "Approved"
-					boolean isApproved = "Approved".equalsIgnoreCase(decision);
+					boolean isApproved = APPROVED.equalsIgnoreCase(decision);
 
 					return matchesCheckpoint || isApproved;
 				}).toList();
@@ -142,7 +156,7 @@ public class CpDataProcessor {
 			for (MarketScope scope : marketScope) {
 				if (scope.getLeadMarket()) {
 
-					CheckpointData cp0 = new CheckpointData(new MetricData(scope.getAnnualisedYear1Volume(), "-"),
+					CheckpointData cp0 = new CheckpointData(new MetricData(scope.getAnnualisedYear1Volume(), "N/A"),
 							new MetricData(scope.getThreeMonthLaunchVolume(), "N/A "),
 							new MetricData(scope.getNsvCase(), "N/A"), new MetricData(" ", " "));
 
@@ -169,7 +183,7 @@ public class CpDataProcessor {
 				int lastCheckpoint = Integer.parseInt(currentCheckpoint) - 1;
 				for (SubmissionRequestGovernanceMilestone milestone : milestones) {
 					String stage = milestone.getGovernanceMilestone().getStage();
-					if (stage.toLowerCase().equals(String.valueOf("CP" + lastCheckpoint).toLowerCase())) {
+					if (stage.toLowerCase().equals(String.valueOf(CPS + lastCheckpoint).toLowerCase())) {
 						cpDate = milestone.getGovernanceMilestone().getDecisionDate().toString();
 						break;
 					}
@@ -181,4 +195,28 @@ public class CpDataProcessor {
 
 	}
 
+	public SubmissionRequest getSubmissionRequest(long requestId) throws Exception {
+		return submissionRequestRepository.findById(requestId)
+				.orElseThrow(() -> new Exception("SubmissionRequest not found with id: " + requestId));
+	}
+
+	public List<SubmissionRequestGovernanceMilestone> getCPApprovedDate(long requestId, String cpName) {
+		return submissionRequestGovernanceMilestoneRepository.findByIdRequestId(requestId).stream().filter(request -> {
+			String decision = request.getGovernanceMilestone().getDecision();
+			boolean isApproved = APPROVED.equalsIgnoreCase(decision);
+
+			return isApproved && request.getGovernanceMilestone().getStage().equalsIgnoreCase(cpName);
+		}).toList();
+	}
+
+	public static String extractDate(String dateTimeString) {
+		DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
+		DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+		// Parse the string to LocalDateTime
+		LocalDateTime dateTime = LocalDateTime.parse(dateTimeString, inputFormatter);
+
+		// Format it to only the date
+		return dateTime.format(outputFormatter);
+	}
 }

@@ -17,7 +17,8 @@ import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Element;
 import com.itextpdf.text.Font;
 import com.itextpdf.text.FontFactory;
-import com.itextpdf.text.Image;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.monster.npd.governance.pdf.pojo.PageHeaderDetailsDTO;
@@ -56,7 +57,7 @@ public class PageHeader {
 	private ReportingQuarterRepository reportingQuarter;
 	@Autowired
 	private UserIdentityRepository identityRepository;
-	
+
 	@Autowired
 	CpDataProcessor cpDataProcessor;
 
@@ -130,7 +131,7 @@ public class PageHeader {
 	private <T> String getDisplayName(Optional<Long> id, Function<Long, Optional<T>> repositoryFunction,
 			Function<T, String> displayNameExtractor) {
 		try {
-			return id.flatMap(repositoryFunction).map(displayNameExtractor).orElse("-");
+			return id.flatMap(repositoryFunction).map(displayNameExtractor).orElse("N/A");
 		} catch (Exception e) {
 			logger.error("Error occurred while fetching display name: {}", e.getMessage(), e);
 			return "";
@@ -162,22 +163,63 @@ public class PageHeader {
 	}
 
 	private static String getValueFromDTO(String label, PageHeaderDetailsDTO dto) {
-		    return Optional.ofNullable(dto)
-		        .map(d -> {
-		            return switch (label) {
-		                case "Project Name" -> d.getProjectName();
-		                case "Project Type" -> d.getProjectType();
-		                case "Project Sub-type" -> d.getProjectSubType();
-		                case "Program Tag" -> d.getProgramTag();
-		                case "Reporting Quarter" -> d.getReportingQ();
-		                case "Currently Active Stage" -> d.getCurrentActiveCP();
-		                case "EZE PM" -> d.getE2ePm();
-		                case "Last CP Date" -> d.getLastCPdate();
-		                default -> "Unknown";
-		            };
-		        })
-		        .orElse("-");
+		return Optional.ofNullable(dto).map(d -> {
+			return switch (label) {
+			case "Project Name" -> d.getProjectName();
+			case "Project Type" -> d.getProjectType();
+			case "Project Sub-type" -> d.getProjectSubType();
+			case "Program Tag" -> d.getProgramTag();
+			case "Reporting Quarter" -> d.getReportingQ();
+			case "Currently Active Stage" -> d.getCurrentActiveCP();
+			case "EZE PM" -> d.getE2ePm();
+			case "Last CP Date" -> d.getLastCPdate();
+			default -> "N/A";
+			};
+		}).orElse("-");
+	}
+
+	public String setMainHeading(PdfWriter writer, Document document, Long requestId) {
+		String heading = "";
+		try {
+			SubmissionRequest submissionRequest = cpDataProcessor.getSubmissionRequest(requestId);
+			if (!Utils.isNullOrEmptyObject(submissionRequest)) {
+				// Safely handle null for each object in the chain
+				String market = getDisplayNameOrDefault(
+						submissionRequest.getLeadMarket() != null ? submissionRequest.getLeadMarket().getDisplayName()
+								: null);
+				String brand = getDisplayNameOrDefault(
+						submissionRequest.getBrands() != null ? submissionRequest.getBrands().getDisplayName() : null);
+				String platform = getDisplayNameOrDefault(
+						submissionRequest.getPlatforms() != null ? submissionRequest.getPlatforms().getDisplayName()
+								: null);
+				String variant = getDisplayNameOrDefault(
+						submissionRequest.getVariantSku() != null ? submissionRequest.getVariantSku().getDisplayName()
+								: null);
+				String packageType = getDisplayNameOrDefault(submissionRequest.getPackagingType() != null
+						? submissionRequest.getPackagingType().getDisplayName()
+						: null);
+
+				heading = market + "_" + brand + "_" + platform + "_" + variant + "_" + packageType;
+				float x = document.right() - 250;
+				float y = document.top() - 90;
+				PdfContentByte canvas = writer.getDirectContent();
+
+				canvas.beginText();
+				BaseFont baseFont = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
+				canvas.setFontAndSize(baseFont, 14);
+				canvas.setColorFill(BaseColor.WHITE);
+				canvas.showTextAligned(Element.ALIGN_CENTER, heading, x - 250, y + 100, 0);
+				canvas.endText();
+			}
+		} catch (Exception e) {
+			logger.error(e.getLocalizedMessage(), e);
 		}
-	
+		return heading;
+
+	}
+
+	private String getDisplayNameOrDefault(String displayName) {
+		return (displayName == null || displayName.isEmpty()) ? "N/A" : displayName;
+	}
 
 }

@@ -4,7 +4,9 @@ import com.itextpdf.text.BaseColor;
 import com.monster.npd.governance.pdf.utils.Utils;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,6 +33,27 @@ public class CheckpointHandler {
 		return checkpointMap.get(value.toUpperCase());
 	}
 
+
+	public static Set<String> getCPSummary(String cpName) {
+		Set<String> targetCpNames = new HashSet<>(Set.of());
+
+		if (!cpName.isEmpty() && cpName.startsWith("CP")) {
+			try {
+				int cpNumber = Integer.parseInt(cpName.substring(2));
+
+				for (int i = 0; i <= cpNumber; i++) {
+					targetCpNames.add("CP" + i);
+				}
+				targetCpNames.add(cpName);
+			} catch (NumberFormatException e) {
+				System.out.println("Invalid CP name format: " + cpName);
+			}
+		}
+
+		return targetCpNames;
+	}
+	
+	
 	public static class CheckpointDetails {
 		private final String name;
 		private final BaseColor baseColor;
@@ -48,4 +71,8 @@ public class CheckpointHandler {
 			return baseColor;
 		}
 	}
+
 }
+
+
+

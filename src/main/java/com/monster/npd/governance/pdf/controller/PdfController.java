@@ -63,16 +63,11 @@ public class PdfController {
 	@Autowired
 	private SubmissionRequestRepositoryCustom submissionRequestRepositoryCustom;
 
-	@PostMapping("/generate/{requestId}")
+	@GetMapping("/generate/{requestId}")
 	public ResponseEntity<?> generatePdf(@PathVariable long requestId) {
 		try {
-			byte[] pdfBytes = pdfGeneratorService.generatePdf(requestId);			
 			HttpHeaders headers = new HttpHeaders();
-			headers.setContentType(MediaType.APPLICATION_PDF);
-			String fileName = "ProjectNumber-LeadMarket-Brand-Platform-Variant-SkuDetail-" + "CP-0_1_2" + "-"
-					+ new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".pdf";
-
-			headers.setContentDispositionFormData("attachment", fileName);
+			byte[] pdfBytes = pdfGeneratorService.generatePdf(requestId, headers);
 
 			return ResponseEntity.ok().headers(headers).body(pdfBytes);
 		} catch (Exception e) {

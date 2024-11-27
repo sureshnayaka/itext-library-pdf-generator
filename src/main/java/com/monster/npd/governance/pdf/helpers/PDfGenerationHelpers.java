@@ -45,7 +45,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	@Override
 	public void onStartPage(PdfWriter writer, Document document) {
 		try {
-			setHeader(writer);
+			setHeader(writer, document);
 			setBackground(writer);
 
 		} catch (Exception e) {
@@ -67,10 +67,10 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		canvas.addImage(backgroundImage);
 	}
 
-	public void setHeader(PdfWriter writer) throws DocumentException {
+	public void setHeader(PdfWriter writer, Document document) throws DocumentException {
 		Image headerImage = loadImage("/assets/headerM.png");
 
-		float headerHeight = 45f;
+		float headerHeight = 42.5f;
 		PdfGState gState = new PdfGState();
 		gState.setFillOpacity(0.9f); // Set opacity to 50%
 
@@ -81,6 +81,19 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		PdfContentByte canvas = writer.getDirectContentUnder();
 		canvas.setGState(gState);
 		canvas.addImage(headerImage);
+		addSpacer(document);
+	}
+
+	public void addSpacer(Document document) {
+
+		try {
+			Paragraph title = new Paragraph(" ", new Font(Font.FontFamily.TIMES_ROMAN, 9, Font.BOLD));
+			title.setSpacingBefore(10f);
+			document.add(title);
+		} catch (DocumentException e) {
+			e.printStackTrace();
+		}
+
 	}
 
 	@Override
@@ -167,6 +180,33 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		}
 	}
 
+	public static void addRowSummary(PdfPTable table, String... values) throws DocumentException {
+		// Default font for cell content
+		Font cellFont = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, BaseColor.BLACK);
+		Font fontStyle_30 = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, BaseColor.RED);
+		for (int i = 0; i < values.length; i++) {
+			PdfPCell cell = new PdfPCell(new Phrase(values[i], cellFont));
+			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+			cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+			cell.setPadding(5);
+			cell.setNoWrap(false);
+
+			if (i == 2) {
+				try {
+					String volumeString = values[i].replace("%", "").trim(); // Remove % symbol
+					float volumePercentage = Float.parseFloat(volumeString);
+
+					if (volumePercentage > 30) {
+						cell.setPhrase(new Phrase(values[i], fontStyle_30));
+					}
+				} catch (NumberFormatException e) {
+					logger.error("Invalid percentage format: " + values[i]);
+				}
+			}
+			table.addCell(cell);
+		}
+	}
+
 	/**
 	 * To add the paragraph like comments/ messages
 	 */
@@ -232,7 +272,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	}
 
 	public static void addTableData(Document document, String tableName, float[] columnWidths, String[][] rowsValues,
-			String[] headers) {
+			String[] headers, boolean isSummary) {
 		try {
 
 			PdfPTable table = new PdfPTable(columnWidths);
@@ -242,7 +282,11 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 
 			setTableHeader(table, headers);
 			for (String[] row : rowsValues) {
-				addRow(table, row);
+				if (isSummary) {
+					addRowSummary(table, row); // Use summary style
+				} else {
+					addRow(table, row); // Use default row style
+				}
 			}
 			document.add(table);
 		} catch (DocumentException e) {
@@ -251,7 +295,8 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 
 	}
 
-	public static void addChunkHeaderCheckPoint(Document document, String value, String approvedDate) throws DocumentException {
+	public static void addChunkHeaderCheckPoint(Document document, String value, String approvedDate)
+			throws DocumentException {
 
 		BaseColor baseColor = new BaseColor(186, 140, 220);
 		CheckpointHandler.CheckpointDetails details = CheckpointHandler.getCheckpointDetails(value);
@@ -275,10 +320,10 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		firstCell.setBorderWidth(1.5f);
 		firstCell.setBorderWidthRight(0f);
 
-		PdfPCell secondCell = new PdfPCell(new Phrase(approvedDate,
-				new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD, BaseColor.BLACK)));
+		PdfPCell secondCell = new PdfPCell(
+				new Phrase(approvedDate, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD, BaseColor.BLACK)));
 		secondCell.setBorderColor(BaseColor.BLACK);
-		secondCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+		secondCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 		secondCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 		secondCell.setPaddingBottom(6);
 		secondCell.setBackgroundColor(baseColor);
@@ -365,34 +410,32 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 
 	public void setCPHeaderImage(String cpName, Document document, PdfWriter writer) {
 		try {
-			String imagePath = "/assets/upload.png";
-			Image logo = loadImage(imagePath);
-			logo.scaleToFit(120, 120);
-			float x = document.right() - 250;
+//			String imagePath = "/assets/upload.png";
+//			Image logo = loadImage(imagePath);
+//			logo.scaleToFit(120, 120);
+			float x = document.right() - 350;
 			float y = document.top() - 90;
-			logo.setAbsolutePosition(x, y);
-			writer.getDirectContent().addImage(logo);
+//			logo.setAbsolutePosition(x, y);
+//			writer.getDirectContent().addImage(logo);
 
-		} catch (DocumentException exception) {
+			PdfContentByte canvas = writer.getDirectContent();
+			float width = 350f;
+			float height = 75f;
+			canvas.saveState();
+			PdfGState gstate = new PdfGState();
+			gstate.setFillOpacity(0f);
+			gstate.setStrokeOpacity(1f);
+			canvas.setGState(gstate);
+			canvas.setColorStroke(new BaseColor(0, 102, 0));
+			canvas.setLineDash(3f, 3f);
+			canvas.setLineWidth(1f);
+			canvas.rectangle(x, y, width, height);
+			canvas.stroke();
+
+			canvas.restoreState();
+		} catch (Exception exception) {
 			logger.error(exception.getMessage());
 		}
 	}
 
-	public void setMainHeading(PdfWriter writer, Document document) {
-		try {
-			float x = document.right() - 250;
-			float y = document.top() - 90;
-			PdfContentByte canvas = writer.getDirectContent();
-
-			canvas.beginText();
-			BaseFont baseFont = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
-			canvas.setFontAndSize(baseFont, 14);
-			canvas.setColorFill(BaseColor.WHITE);
-			canvas.showTextAligned(Element.ALIGN_CENTER,
-					"[Market][Brand][Platform][Variant]-[SKU Details][Primary Package type]", x - 250, y + 100, 0);
-			canvas.endText();
-		} catch (DocumentException | IOException e) {
-			logger.error(e.getLocalizedMessage());
-		}
-	}
 }
