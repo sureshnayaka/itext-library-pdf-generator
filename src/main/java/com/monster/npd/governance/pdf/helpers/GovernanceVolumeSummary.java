@@ -23,10 +23,7 @@ import com.itextpdf.text.FontFactory;
 import com.itextpdf.text.Phrase;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
-import com.monster.npd.governance.pdf.pojo.CP;
 import com.monster.npd.governance.pdf.pojo.CheckpointData;
-import com.monster.npd.governance.pdf.pojo.MarketScope;
-import com.monster.npd.governance.pdf.pojo.MarketScopeDTO;
 
 @Component
 public class GovernanceVolumeSummary {

@@ -36,18 +36,14 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	private static final Logger logger = LogManager.getLogger(PdfGeneratorServiceImplementation.class);
 
 	private static final String CP0 = "CP0";
-	private static final String CP1 = "CP1";
 	private static final String WHY_PROJECT = "Why do the Project? :";
 	private static final String WHAT_PROJECT = "What do this project? :";
 	private static final String APPROVER_COMMENTS = "Approver comments :";
 	private static final String PM_COMMENTS = "Project Managers comments :";
 	private static final String GAS = "Governance Audit Summary";
 	private static final String GVS = "Governance Volume Summary";
-
 	private static final String SAME_PREVIOUS_CP = " is same as previous CP";
-
 	private static final String LINK_STRATEGY = "Link to stratergy";
-
 	private static final String CM_COMMENTS = "Commercial comments";
 
 	@Autowired
@@ -95,6 +91,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 			initializeCP(document, cp, requestId, writer);
 			// initalizeGovernanceAuditAndVolumeSummary(document, requestId);
 
+			// TODO need to know how to name should be for PDF
 			headers.setContentType(MediaType.APPLICATION_PDF);
 			String fileName = requestId + "-" + header + "CP-0" + "-"
 					+ new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".pdf";

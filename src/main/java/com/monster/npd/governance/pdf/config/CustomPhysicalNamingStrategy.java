@@ -15,6 +15,9 @@ import com.monster.npd.governance.pdf.utils.Utils;
 public class CustomPhysicalNamingStrategy implements PhysicalNamingStrategy {
 
 	private static Logger logger = LoggerFactory.getLogger(CustomPhysicalNamingStrategy.class);
+	
+	private static final String GOVERNANCE_AUDIT ="GOVERNANCE_AUDIT"; 
+	private static final String IDENTITY_TABLE ="opentextentityidentitycomponentsidentity";
 
 	@Value("${npd.table.prefix}")
 	private String PREFIX;
@@ -38,14 +41,13 @@ public class CustomPhysicalNamingStrategy implements PhysicalNamingStrategy {
 			throw new IllegalArgumentException("Input Identifier or its text cannot be null");
 		}
 
-		String entityCheckString = "opentextentityidentitycomponentsidentity";
 		String tableName = name.getText();
 
-		if (tableName.toLowerCase().contains(entityCheckString)) {
+		if (tableName.toLowerCase().contains(IDENTITY_TABLE)) {
 			String tableNameWithPrefix = UserRequiredORG_ID + tableName;
 			logger.debug("Returning table name with UserRequiredORG_ID prefix: {}", tableNameWithPrefix);
 			return Identifier.toIdentifier(tableNameWithPrefix);
-		} else if (name.getText().equalsIgnoreCase("GOVERNANCE_AUDIT")) {
+		} else if (name.getText().equalsIgnoreCase(GOVERNANCE_AUDIT)) {
 			return name;
 		}
 		String tableNameWithPrefix = PREFIX + tableName;

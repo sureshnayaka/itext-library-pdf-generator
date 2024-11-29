@@ -3,7 +3,6 @@ package com.monster.npd.governance.pdf.helpers;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +55,13 @@ public class CpDataProcessor {
 	@Autowired
 	private SubmissionsRequestRepository submissionRequestRepository;
 
+	/**
+	 * @author Suresh
+	 * @param requestId
+	 * @implNote Method used to fetch the cps from the talbe and from the response
+	 *           to print number of cp on the PDF.
+	 * @return List<CP>
+	 */
 	public List<CP> getCPListForPdfGeneration(long requestId) {
 		List<CP> cps = new ArrayList<>();
 
@@ -81,23 +87,46 @@ public class CpDataProcessor {
 //			         .sorted(Comparator.comparing(CP::getCpName).reversed())
 //			         .collect(Collectors.toList());
 
-
 		} catch (Exception e) {
 			logger.error("Error occurred while fetching CP data for requestId {}: {}", requestId, e.getMessage(), e);
 		}
 		return cps;
 	}
 
+	/**
+	 * @author Suresh
+	 * @param governanceId
+	 * @return
+	 * @implNote Method used to fetch the market scope table records based on the
+	 *           governance Id.
+	 */
 	public List<MarketScopeDTO> getMarketScopeById(long governanceId) {
 		return fetchAndMapToDTO(governanceId, commercialMarketScopeRepository::findByPoGovernanceMSId,
 				MarketScopeDTO::new);
 	}
 
+	/**
+	 * @author Suresh
+	 * @param governanceId
+	 * @return
+	 * @implNote Method used to fetch the Deliverable threshold table records based
+	 *           on the governance Id.
+	 */
 	public List<DeliverableThresholdDTO> getDeliverableThresholdById(long governanceId) {
 		return fetchAndMapToDTO(governanceId, deliverableThresholdRepository::findByPoGovernanceMSId,
 				DeliverableThresholdDTO::new);
 	}
 
+	/**
+	 * 
+	 * @param <T>
+	 * @param <R>
+	 * @param requestId
+	 * @param fetchFunction
+	 * @param dtoConstructor
+	 * @return
+	 * @implNote Helper method used to call repository.
+	 */
 	private <T, R> List<T> fetchAndMapToDTO(long requestId, Function<Long, List<R>> fetchFunction,
 			BiFunction<String, List<R>, T> dtoConstructor) {
 		List<SubmissionRequestGovernanceMilestone> submissionRequests = submissionRequestGovernanceMilestoneRepository
@@ -195,11 +224,26 @@ public class CpDataProcessor {
 
 	}
 
+	/**
+	 * @author Suresh
+	 * @param requestId
+	 * @return
+	 * @throws Exception
+	 * @implNote Method used to fetch the records from submission request table and
+	 *           its respective FK table records.
+	 */
 	public SubmissionRequest getSubmissionRequest(long requestId) throws Exception {
 		return submissionRequestRepository.findById(requestId)
 				.orElseThrow(() -> new Exception("SubmissionRequest not found with id: " + requestId));
 	}
 
+	/**
+	 * 
+	 * @param requestId
+	 * @param cpName
+	 * @return
+	 * @implNote Method used to get the CP approved date for the current cp.
+	 */
 	public List<SubmissionRequestGovernanceMilestone> getCPApprovedDate(long requestId, String cpName) {
 		return submissionRequestGovernanceMilestoneRepository.findByIdRequestId(requestId).stream().filter(request -> {
 			String decision = request.getGovernanceMilestone().getDecision();

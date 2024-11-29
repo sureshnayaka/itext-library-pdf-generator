@@ -52,6 +52,15 @@ public class CPPageTemplate {
 	@Autowired
 	private PortfolioTableFieldConfig portfolioTableFieldConfig;
 	
+	/**
+	 * 
+	 * @param document
+	 * @param requestId
+	 * @param cpName
+	 * @throws DocumentException
+	 * @Description Method used to create the table on the pdf for market scope with
+	 *              records.
+	 */
 	public void addMarketScopeTableForCp(Document document, long requestId, String cpName) throws DocumentException {
 
 		float[] columnWidths = { 3f, 2f, 3f, 3f, 2.5f, 2f, 2f, 2.5f, 3f, 3.5f, 3.8f, 3.5f };

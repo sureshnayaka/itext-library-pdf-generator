@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 public class CheckpointHandler {
 	private static final Map<String, CheckpointDetails> checkpointMap = new HashMap<>();
 	private static final Logger logger = LogManager.getLogger(CheckpointHandler.class);
+	private static final String CP = "CP";
 	static {
 		checkpointMap.put("CP0", new CheckpointDetails("CHECKPOINT 0", new BaseColor(186, 140, 220)));
 		checkpointMap.put("CP1", new CheckpointDetails("CHECKPOINT 1", new BaseColor(68, 114, 196)));
@@ -33,16 +34,15 @@ public class CheckpointHandler {
 		return checkpointMap.get(value.toUpperCase());
 	}
 
-
 	public static Set<String> getCPSummary(String cpName) {
 		Set<String> targetCpNames = new HashSet<>(Set.of());
 
-		if (!cpName.isEmpty() && cpName.startsWith("CP")) {
+		if (!cpName.isEmpty() && cpName.startsWith(CP)) {
 			try {
 				int cpNumber = Integer.parseInt(cpName.substring(2));
 
 				for (int i = 0; i <= cpNumber; i++) {
-					targetCpNames.add("CP" + i);
+					targetCpNames.add(CP + i);
 				}
 				targetCpNames.add(cpName);
 			} catch (NumberFormatException e) {
@@ -52,8 +52,7 @@ public class CheckpointHandler {
 
 		return targetCpNames;
 	}
-	
-	
+
 	public static class CheckpointDetails {
 		private final String name;
 		private final BaseColor baseColor;
@@ -73,6 +72,3 @@ public class CheckpointHandler {
 	}
 
 }
-
-
-

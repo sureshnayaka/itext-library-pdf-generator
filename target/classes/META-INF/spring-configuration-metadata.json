@@ -28,6 +28,26 @@
       "sourceType": "com.monster.npd.governance.pdf.table.config.MarketScopeTableFieldConfig"
     },
     {
+      "name": "npd.request.commercialMarketScope",
+      "type": "java.lang.String",
+      "description": "A description for 'npd.request.commercialMarketScope'"
+    },
+    {
+      "name": "npd.request.deliverableThreshold",
+      "type": "java.lang.String",
+      "description": "A description for 'npd.request.deliverableThreshold'"
+    },
+    {
+      "name": "npd.request.governanceMilestone",
+      "type": "java.lang.String",
+      "description": "A description for 'npd.request.governanceMilestone'"
+    },
+    {
+      "name": "npd.table.prefix",
+      "type": "java.lang.String",
+      "description": "A description for 'npd.table.prefix'"
+    },
+    {
       "name": "portfolio.headers",
       "type": "java.util.List<java.lang.String>",
       "sourceType": "com.monster.npd.governance.pdf.table.config.PortfolioTableFieldConfig"
