@@ -14,10 +14,10 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.PageSize;
-import com.itextpdf.text.pdf.PdfWriter;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.pdf.PdfWriter;
 import com.monster.npd.governance.pdf.helpers.CPPageTemplate;
 import com.monster.npd.governance.pdf.helpers.CpDataProcessor;
 import com.monster.npd.governance.pdf.helpers.GovernanceAuditSummaryHelper;
@@ -195,9 +195,9 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		pDfGenerationHelpers.setCPHeaderImage(cpName, document, writer);
 		pDfGenerationHelpers.setCPHeaderTitleOnTopRight(cpName, document, writer);
 
-		PDfGenerationHelpers.addChunkComments(document, WHAT_PROJECT, "N/A", 50, 2.5f, 0.05f);
-		PDfGenerationHelpers.addChunkComments(document, WHY_PROJECT, "N/A", 50, 2.5f, 0.05f);
-		PDfGenerationHelpers.addChunkComments(document, LINK_STRATEGY, "N/A", 50, 2.5f, 0.05f);
+		//PDfGenerationHelpers.addChunkComments(document, WHAT_PROJECT, "N/A", 50, 2.5f, 0.05f);
+		////PDfGenerationHelpers.addChunkComments(document, WHY_PROJECT, "N/A", 50, 2.5f, 0.05f);
+		//PDfGenerationHelpers.addChunkComments(document, LINK_STRATEGY, "N/A", 50, 2.5f, 0.05f);
 
 		if (!cpName.equalsIgnoreCase(CP0)) {
 			cpPageTemplate.addAnualizedSummaryCheckPoints(document, requestId, cpName);

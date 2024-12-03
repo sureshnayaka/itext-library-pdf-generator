@@ -1,5 +1,6 @@
 package com.monster.npd.governance.pdf.helpers;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.stream.IntStream;
@@ -8,26 +9,25 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
-import com.itextpdf.text.BadElementException;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Chunk;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.FontFactory;
-import com.itextpdf.text.Image;
-import com.itextpdf.text.PageSize;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Phrase;
-import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfContentByte;
-import com.itextpdf.text.pdf.PdfGState;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfPageEventHelper;
-import com.itextpdf.text.pdf.PdfWriter;
+import com.lowagie.text.BadElementException;
+import com.lowagie.text.Chunk;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Image;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.Rectangle;
+import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.PdfContentByte;
+import com.lowagie.text.pdf.PdfGState;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfPageEventHelper;
+import com.lowagie.text.pdf.PdfWriter;
 import com.monster.npd.governance.pdf.utils.Utils;
 
 /**
@@ -38,9 +38,10 @@ import com.monster.npd.governance.pdf.utils.Utils;
 public class PDfGenerationHelpers extends PdfPageEventHelper {
 	private static final Logger logger = LogManager.getLogger(PDfGenerationHelpers.class);
 
-	private static final Font TITLE_FONT = new Font(Font.FontFamily.TIMES_ROMAN, 14, Font.BOLD, BaseColor.BLACK);
-	private static final Font TITLE_FONT_ACTIVE = new Font(Font.FontFamily.TIMES_ROMAN, 14, Font.BOLD,
-			new BaseColor(38, 86, 66));
+	private static final Font TITLE_FONT = new Font(
+			FontFactory.getFont(FontFactory.TIMES_ROMAN, 14, Font.BOLD, Color.BLACK));
+	private static final Font TITLE_FONT_ACTIVE = new Font(
+			FontFactory.getFont(FontFactory.TIMES_ROMAN, 14, Font.BOLD, new Color(38, 86, 66)));
 
 	@Override
 	public void onStartPage(PdfWriter writer, Document document) {
@@ -87,7 +88,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	public void addSpacer(Document document) {
 
 		try {
-			Paragraph title = new Paragraph(" ", new Font(Font.FontFamily.TIMES_ROMAN, 9, Font.BOLD));
+			Paragraph title = new Paragraph(" ", new Font(Font.TIMES_ROMAN, 9, Font.BOLD));
 			title.setSpacingBefore(10f);
 			document.add(title);
 		} catch (DocumentException e) {
@@ -106,7 +107,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 //	
 			// background color
 
-//			canvas.setColorFill(new BaseColor(233, 233, 233));
+//			canvas.setColorFill(new Color(233, 233, 233));
 //
 //			canvas.rectangle(0, 0, document.getPageSize().getWidth(), document.getPageSize().getHeight());
 //			canvas.fill();
@@ -114,7 +115,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			// footer copy right text
 //			ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_CENTER,
 //					new Phrase("Copyright © 2024 Acheron Software Consultany Pvt. Ltd. All Rights Reserved.",
-//							new Font(Font.FontFamily.TIMES_ROMAN, 10, Font.NORMAL, BaseColor.BLACK)),
+//							new Font(Font.FontFamily.TIMES_ROMAN, 10, Font.NORMAL, Color.BLACK)),
 //					(document.left() + document.right() / 2), document.bottom() - 20, 0);
 
 		} catch (Exception e) {
@@ -141,7 +142,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	 * To add table names on the tables
 	 */
 	public static void addHeaderTitles(Document document, String HeaderTitle) throws DocumentException {
-		Paragraph title = new Paragraph(HeaderTitle, new Font(Font.FontFamily.TIMES_ROMAN, 9, Font.BOLD));
+		Paragraph title = new Paragraph(HeaderTitle, new Font(Font.TIMES_ROMAN, 9, Font.BOLD));
 		title.setAlignment(Element.ALIGN_LEFT);
 		title.setFirstLineIndent(5f);
 		title.setSpacingAfter(5f);
@@ -169,7 +170,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	 * To add row/Cells in the table
 	 */
 	public static void addRow(PdfPTable table, String... values) throws DocumentException {
-		Font cellFont = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, BaseColor.BLACK); // White content font
+		Font cellFont = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, Color.BLACK); // White content font
 		for (String value : values) {
 			PdfPCell cell = new PdfPCell(new Phrase(value, cellFont));
 			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -182,8 +183,8 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 
 	public static void addRowSummary(PdfPTable table, String... values) throws DocumentException {
 		// Default font for cell content
-		Font cellFont = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, BaseColor.BLACK);
-		Font fontStyle_30 = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, BaseColor.RED);
+		Font cellFont = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, Color.BLACK);
+		Font fontStyle_30 = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, Color.RED);
 		for (int i = 0; i < values.length; i++) {
 			PdfPCell cell = new PdfPCell(new Phrase(values[i], cellFont));
 			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -230,7 +231,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	}
 
 	public static void addTableRow(PdfPTable table, String label, String value, Font labelFont, Font valueFont,
-			int alignment, float padding, BaseColor borderColor) {
+			int alignment, float padding, Color borderColor) {
 		PdfPCell labelCell = createStyledCell(label, labelFont, alignment, padding, borderColor);
 		PdfPCell valueCell = createStyledCell(value, valueFont, alignment, padding, borderColor);
 		table.addCell(labelCell);
@@ -238,7 +239,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	}
 
 	private static PdfPCell createStyledCell(String content, Font font, int alignment, float padding,
-			BaseColor borderColor) {
+			Color borderColor) {
 		PdfPCell cell = new PdfPCell(new Phrase(content, font));
 		cell.setPadding(padding);
 		cell.setHorizontalAlignment(alignment);
@@ -249,21 +250,21 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	}
 
 	public static void setTableHeader(PdfPTable table, String... headers) {
-		Font headerFont = FontFactory.getFont(FontFactory.TIMES_BOLD, 9, BaseColor.WHITE);
+		Font headerFont = FontFactory.getFont(FontFactory.TIMES_BOLD, 9, Color.WHITE);
 		IntStream.range(0, headers.length).forEach(i -> {
 			PdfPCell cell = new PdfPCell(new Phrase(headers[i], headerFont));
 			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
 			cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 			cell.setPadding(5);
 			cell.setNoWrap(false);
-			cell.setBackgroundColor(BaseColor.BLACK);
-			cell.setBorderColor(BaseColor.WHITE);
+			cell.setBackgroundColor(Color.BLACK);
+			cell.setBorderColor(Color.WHITE);
 			if (i == 0) {
-				cell.setBorderColorLeft(BaseColor.BLACK);
+				cell.setBorderColorLeft(Color.BLACK);
 				cell.setBorderWidthLeft(20f);
 
 			} else if (i == headers.length - 1) {
-				cell.setBorderColorRight(BaseColor.BLACK);
+				cell.setBorderColorRight(Color.BLACK);
 				cell.setBorderWidthRight(20f);
 			}
 
@@ -298,10 +299,10 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	public static void addChunkHeaderCheckPoint(Document document, String value, String approvedDate)
 			throws DocumentException {
 
-		BaseColor baseColor = new BaseColor(186, 140, 220);
+		Color baseColor = new Color(186, 140, 220);
 		CheckpointHandler.CheckpointDetails details = CheckpointHandler.getCheckpointDetails(value);
 		value = details.getName(); // Dynamically fetched checkpoint name
-		baseColor = details.getBaseColor(); // Dynamically fetched BaseColor
+		baseColor = details.getBaseColor(); // Dynamically fetched Color
 		PdfPTable table = new PdfPTable(3);
 		table.setWidthPercentage(100);
 		table.setSpacingBefore(5f);
@@ -309,9 +310,8 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		float[] columnWidths = { 4f, 0f, 3f };
 		table.setWidths(columnWidths);
 
-		PdfPCell firstCell = new PdfPCell(
-				new Phrase(value, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD, BaseColor.BLACK)));
-		firstCell.setBackgroundColor(BaseColor.BLACK);
+		PdfPCell firstCell = new PdfPCell(new Phrase(value, new Font(Font.TIMES_ROMAN, 12, Font.BOLD, Color.BLACK)));
+		firstCell.setBackgroundColor(Color.BLACK);
 		firstCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
 		firstCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 		firstCell.setPaddingBottom(6);
@@ -321,8 +321,8 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		firstCell.setBorderWidthRight(0f);
 
 		PdfPCell secondCell = new PdfPCell(
-				new Phrase(approvedDate, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD, BaseColor.BLACK)));
-		secondCell.setBorderColor(BaseColor.BLACK);
+				new Phrase(approvedDate, new Font(Font.TIMES_ROMAN, 12, Font.BOLD, Color.BLACK)));
+		secondCell.setBorderColor(Color.BLACK);
 		secondCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 		secondCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 		secondCell.setPaddingBottom(6);
@@ -348,21 +348,19 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		PdfPTable table = new PdfPTable(3);
 		table.setWidthPercentage(tableWidth);
 		table.setSpacingBefore(5f);
-		table.setHorizontalAlignment(Element.ANCHOR);
+		table.setHorizontalAlignment(Element.ALIGN_LEFT);
 		float[] columnWidths = { cellwdith, spaceWidth, 4f };
 		table.setWidths(columnWidths);
 
-		PdfPCell firstCell = new PdfPCell(
-				new Phrase(key, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL, BaseColor.WHITE)));
-		firstCell.setBackgroundColor(BaseColor.BLACK);
+		PdfPCell firstCell = new PdfPCell(new Phrase(key, new Font(Font.TIMES_ROMAN, 12, Font.NORMAL, Color.WHITE)));
+		firstCell.setBackgroundColor(Color.BLACK);
 		firstCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 		firstCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 		firstCell.setPaddingBottom(6);
 		firstCell.setFixedHeight(20);
 
-		PdfPCell secondCell = new PdfPCell(
-				new Phrase(value, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.NORMAL, BaseColor.BLACK)));
-		secondCell.setBorderColor(BaseColor.BLACK);
+		PdfPCell secondCell = new PdfPCell(new Phrase(value, new Font(Font.TIMES_ROMAN, 12, Font.NORMAL, Color.BLACK)));
+		secondCell.setBorderColor(Color.BLACK);
 		secondCell.setBorderWidth(1f);
 		secondCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 		secondCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
@@ -391,7 +389,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			float textHeight = 34f;
 
 			CheckpointHandler.CheckpointDetails details = CheckpointHandler.getCheckpointDetails(cpName);
-			BaseColor baseColor = details.getBaseColor();
+			Color baseColor = details.getBaseColor();
 			canvas.setColorFill(baseColor);
 			float rectX = x + 250 - textWidth / 2;
 			float rectY = y + 105 - textHeight / 2;
@@ -399,7 +397,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			canvas.fill();
 			canvas.beginText();
 			canvas.setFontAndSize(baseFont, fontSize);
-			canvas.setColorFill(BaseColor.BLACK);
+			canvas.setColorFill(Color.BLACK);
 			canvas.setLineDash(2);
 			canvas.showTextAligned(Element.ALIGN_CENTER, cpName, x + 250, y + 100, 0);
 			canvas.endText();
@@ -426,7 +424,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			gstate.setFillOpacity(0f);
 			gstate.setStrokeOpacity(1f);
 			canvas.setGState(gstate);
-			canvas.setColorStroke(new BaseColor(0, 102, 0));
+			canvas.setColorStroke(new Color(0, 102, 0));
 			canvas.setLineDash(3f, 3f);
 			canvas.setLineWidth(1f);
 			canvas.rectangle(x, y, width, height);

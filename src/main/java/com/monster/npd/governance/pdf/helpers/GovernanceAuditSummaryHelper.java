@@ -3,10 +3,11 @@ package com.monster.npd.governance.pdf.helpers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.pdf.PdfPTable;
+import com.lowagie.text.*;
+import com.lowagie.text.Font;
+import com.lowagie.text.Image;
+import com.lowagie.text.pdf.*;
+
 
 @Component
 public class GovernanceAuditSummaryHelper {

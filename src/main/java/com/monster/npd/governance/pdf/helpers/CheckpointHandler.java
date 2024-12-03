@@ -1,8 +1,6 @@
 package com.monster.npd.governance.pdf.helpers;
 
-import com.itextpdf.text.BaseColor;
-import com.monster.npd.governance.pdf.utils.Utils;
-
+import java.awt.Color;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -11,16 +9,18 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.monster.npd.governance.pdf.utils.Utils;
+
 public class CheckpointHandler {
 	private static final Map<String, CheckpointDetails> checkpointMap = new HashMap<>();
 	private static final Logger logger = LogManager.getLogger(CheckpointHandler.class);
 	private static final String CP = "CP";
 	static {
-		checkpointMap.put("CP0", new CheckpointDetails("CHECKPOINT 0", new BaseColor(186, 140, 220)));
-		checkpointMap.put("CP1", new CheckpointDetails("CHECKPOINT 1", new BaseColor(68, 114, 196)));
-		checkpointMap.put("CP2", new CheckpointDetails("CHECKPOINT 2", new BaseColor(255, 253, 2)));
-		checkpointMap.put("CP3", new CheckpointDetails("CHECKPOINT 3", new BaseColor(0, 176, 240)));
-		checkpointMap.put("CP4", new CheckpointDetails("CHECKPOINT 4", new BaseColor(140, 216, 114)));
+		checkpointMap.put("CP0", new CheckpointDetails("CHECKPOINT 0", new Color(186, 140, 220)));
+		checkpointMap.put("CP1", new CheckpointDetails("CHECKPOINT 1", new Color(68, 114, 196)));
+		checkpointMap.put("CP2", new CheckpointDetails("CHECKPOINT 2", new Color(255, 253, 2)));
+		checkpointMap.put("CP3", new CheckpointDetails("CHECKPOINT 3", new Color(0, 176, 240)));
+		checkpointMap.put("CP4", new CheckpointDetails("CHECKPOINT 4", new Color(140, 216, 114)));
 	}
 
 	public static CheckpointDetails getCheckpointDetails(String value) {
@@ -29,7 +29,7 @@ public class CheckpointHandler {
 
 			return new CheckpointDetails(
 					Utils.isNullOrEmptyString(value) ? "Oops! Checkpoint '" + value + "' is not identified." : value,
-					BaseColor.LIGHT_GRAY);
+					Color.LIGHT_GRAY);
 		}
 		return checkpointMap.get(value.toUpperCase());
 	}
@@ -55,9 +55,9 @@ public class CheckpointHandler {
 
 	public static class CheckpointDetails {
 		private final String name;
-		private final BaseColor baseColor;
+		private final Color baseColor;
 
-		public CheckpointDetails(String name, BaseColor baseColor) {
+		public CheckpointDetails(String name, Color baseColor) {
 			this.name = name;
 			this.baseColor = baseColor;
 		}
@@ -66,7 +66,7 @@ public class CheckpointHandler {
 			return name;
 		}
 
-		public BaseColor getBaseColor() {
+		public Color getBaseColor() {
 			return baseColor;
 		}
 	}

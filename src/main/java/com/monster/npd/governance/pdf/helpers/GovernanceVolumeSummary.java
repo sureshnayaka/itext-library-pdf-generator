@@ -14,15 +14,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.FontFactory;
-import com.itextpdf.text.Phrase;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import java.awt.*;
+
 import com.monster.npd.governance.pdf.pojo.CheckpointData;
 
 @Component
@@ -34,9 +35,9 @@ public class GovernanceVolumeSummary {
 	public void governanceVolumeSummary(Document document, long requestId)
 			throws DocumentException, JsonMappingException, JsonProcessingException {
 
-		Font font = FontFactory.getFont(FontFactory.TIMES_BOLD, 9, BaseColor.WHITE);
-		Font subCell = new Font(Font.FontFamily.TIMES_ROMAN, 9, Font.NORMAL, BaseColor.BLACK);
-		Font fontCell = FontFactory.getFont(FontFactory.TIMES_BOLD, 9, BaseColor.BLACK);
+		Font font = FontFactory.getFont(FontFactory.TIMES_BOLD, 9, Color.WHITE);
+		Font subCell = new Font(Font.TIMES_ROMAN, 9, Font.NORMAL, Color.BLACK);
+		Font fontCell = FontFactory.getFont(FontFactory.TIMES_BOLD, 9, Color.BLACK);
 
 		Map<String, CheckpointData> commercialMarketScopes = cpDataProcessor.getCPforVolumeSummary(requestId);
 		List<String> cpHeaders = new ArrayList<>();
@@ -88,9 +89,9 @@ public class GovernanceVolumeSummary {
 		// Add dynamic main headers for each CP
 		IntStream.range(0, cpHeaders.size()).forEach(i -> {
 			PdfPCell headerCell = new PdfPCell(new Phrase(cpHeaders.get(i), font));
-			headerCell.setBackgroundColor(BaseColor.BLACK);
+			headerCell.setBackgroundColor(Color.BLACK);
 			headerCell.setColspan(2);
-			headerCell.setBorderColorLeft(BaseColor.WHITE);
+			headerCell.setBorderColorLeft(Color.WHITE);
 			headerCell.setBorderWidthLeft(1);
 			headerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 			table.addCell(headerCell);

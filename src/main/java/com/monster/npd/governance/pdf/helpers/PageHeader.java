@@ -11,16 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.FontFactory;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfContentByte;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfWriter;
+
 import com.monster.npd.governance.pdf.pojo.PageHeaderDetailsDTO;
 import com.monster.npd.governance.pdf.pojo.ProgramTag;
 import com.monster.npd.governance.pdf.pojo.ProjectSubType;
@@ -36,6 +27,20 @@ import com.monster.npd.governance.pdf.repository.ReportingQuarterRepository;
 import com.monster.npd.governance.pdf.repository.SubmissionRequestGovernanceMilestoneRepository;
 import com.monster.npd.governance.pdf.repository.UserIdentityRepository;
 import com.monster.npd.governance.pdf.utils.Utils;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.PdfContentByte;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
+
+import java.awt.*;
+
 
 @Component
 public class PageHeader {
@@ -76,7 +81,7 @@ public class PageHeader {
 		for (String label : labels) {
 			String value = getValueFromDTO(label, headerDetailsDTO);
 			PDfGenerationHelpers.addTableRow(table, label, value, labelFont, valueFont, Element.ALIGN_CENTER, 2,
-					BaseColor.LIGHT_GRAY);
+					Color.LIGHT_GRAY);
 		}
 
 		document.add(table);
@@ -207,7 +212,7 @@ public class PageHeader {
 				canvas.beginText();
 				BaseFont baseFont = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
 				canvas.setFontAndSize(baseFont, 14);
-				canvas.setColorFill(BaseColor.WHITE);
+				canvas.setColorFill(Color.WHITE);
 				canvas.showTextAligned(Element.ALIGN_CENTER, heading, x - 250, y + 100, 0);
 				canvas.endText();
 			}

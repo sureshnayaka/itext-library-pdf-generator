@@ -12,8 +12,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
+
 import com.monster.npd.governance.pdf.pojo.DeliverableThreshold;
 import com.monster.npd.governance.pdf.pojo.DeliverableThresholdDTO;
 import com.monster.npd.governance.pdf.pojo.MarketScope;
@@ -23,6 +22,12 @@ import com.monster.npd.governance.pdf.pojo.SubmissionRequest;
 import com.monster.npd.governance.pdf.table.config.DeliverableThresholdTableFieldConfig;
 import com.monster.npd.governance.pdf.table.config.MarketScopeTableFieldConfig;
 import com.monster.npd.governance.pdf.table.config.PortfolioTableFieldConfig;
+
+import com.lowagie.text.*;
+import com.lowagie.text.Font;
+import com.lowagie.text.Image;
+import com.lowagie.text.pdf.*;
+
 
 @Component
 public class CPPageTemplate {
