@@ -22,6 +22,7 @@ import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.ColumnText;
 import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfGState;
 import com.lowagie.text.pdf.PdfPCell;
@@ -54,24 +55,43 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		}
 	}
 
+//	public void setBackground(PdfWriter writer) throws DocumentException {
+//	    // Load background image
+//	    Image backgroundImage = loadImage("/assets/Back.jpg");
+//	    
+//	    // Scale to cover the entire page with bleed
+//	    float bleedMargin = 10f; // Extend slightly for bleed
+//	    backgroundImage.scaleAbsolute(PageSize.A4.getHeight() + bleedMargin, PageSize.A4.getWidth() + bleedMargin);
+//	    
+//	    // Set opacity
+//	    PdfGState gState = new PdfGState();
+//	    gState.setFillOpacity(0.1f); // 10% opacity
+//	    
+//	    // Add to canvas
+//	    PdfContentByte canvas = writer.getDirectContentUnder();
+//	    canvas.setGState(gState);
+//	    System.err.println(-bleedMargin / 2);
+//	    backgroundImage.setAbsolutePosition(-bleedMargin / 2, -bleedMargin / 2); // Center the bleed
+//	    canvas.addImage(backgroundImage);
+//	}
+
 	public void setBackground(PdfWriter writer) throws DocumentException {
 		Image backgroundImage = loadImage("/assets/Back.jpg");
-
 		backgroundImage.scaleAbsolute(PageSize.A4.getHeight(), PageSize.A4.getWidth());
-
-		PdfGState gState = new PdfGState();
-		gState.setFillOpacity(0.1f); // Set opacity to 50%
+		backgroundImage.setAbsolutePosition(0, 0);
 
 		PdfContentByte canvas = writer.getDirectContentUnder();
+		PdfGState gState = new PdfGState();
+		gState.setFillOpacity(0.1f); // Set opacity to 50%
 		canvas.setGState(gState);
-		backgroundImage.setAbsolutePosition(0, 0);
 		canvas.addImage(backgroundImage);
+
 	}
 
 	public void setHeader(PdfWriter writer, Document document) throws DocumentException {
 		Image headerImage = loadImage("/assets/headerM.png");
 
-		float headerHeight = 42.5f;
+		float headerHeight = 40f;
 		PdfGState gState = new PdfGState();
 		gState.setFillOpacity(0.9f); // Set opacity to 50%
 
@@ -89,7 +109,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 
 		try {
 			Paragraph title = new Paragraph(" ", new Font(Font.TIMES_ROMAN, 9, Font.BOLD));
-			title.setSpacingBefore(10f);
+			title.setSpacingBefore(8f);
 			document.add(title);
 		} catch (DocumentException e) {
 			e.printStackTrace();
@@ -113,10 +133,10 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 //			canvas.fill();
 
 			// footer copy right text
-//			ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_CENTER,
-//					new Phrase("Copyright © 2024 Acheron Software Consultany Pvt. Ltd. All Rights Reserved.",
-//							new Font(Font.FontFamily.TIMES_ROMAN, 10, Font.NORMAL, Color.BLACK)),
-//					(document.left() + document.right() / 2), document.bottom() - 20, 0);
+			ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_CENTER,
+					new Phrase(String.valueOf(document.getPageNumber()),
+							new Font(Font.TIMES_ROMAN, 12, Font.NORMAL, Color.BLACK)),
+					(document.left()), document.bottom() - 20, 0);
 
 		} catch (Exception e) {
 			logger.error(e.getLocalizedMessage());
@@ -249,10 +269,36 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		return cell;
 	}
 
-	public static void setTableHeader(PdfPTable table, String... headers) {
+	public static void setTableHeader(PdfPTable table, String tableTitle, String... headers) {
 		Font headerFont = FontFactory.getFont(FontFactory.TIMES_BOLD, 9, Color.WHITE);
+		Font smallerFont = FontFactory.getFont(FontFactory.TIMES_BOLD, 7, Color.WHITE);
+
 		IntStream.range(0, headers.length).forEach(i -> {
-			PdfPCell cell = new PdfPCell(new Phrase(headers[i], headerFont));
+			PdfPCell cell = new PdfPCell();
+			String headerValue = headers[i];
+			if (headerValue.contains("EUROS")) {
+				headerValue = headerValue.replaceAll("(?i)EUROS", "€ ");
+			}
+
+			if (headerValue.contains("(") && headerValue.contains(")")) {
+
+				// Split text into parts
+				String mainText = headerValue.substring(0, headerValue.indexOf("(")).trim();
+				String parenthesesText = headerValue.substring(headerValue.indexOf("("));
+
+				// Create chunks with different fonts
+				Chunk mainChunk = new Chunk(mainText + " ", headerFont); // Main text
+				Chunk parenthesesChunk = new Chunk(parenthesesText, smallerFont); // Text in parentheses
+
+				// Combine chunks into a phrase
+				Phrase phrase = new Phrase();
+				phrase.add(mainChunk);
+				phrase.add(parenthesesChunk);
+				cell = new PdfPCell(phrase);
+			} else {
+				cell = new PdfPCell(new Phrase(headerValue, headerFont));
+			}
+
 			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
 			cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 			cell.setPadding(5);
@@ -267,7 +313,6 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 				cell.setBorderColorRight(Color.BLACK);
 				cell.setBorderWidthRight(20f);
 			}
-
 			table.addCell(cell);
 		});
 	}
@@ -281,7 +326,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			table.setHorizontalAlignment(Element.ALIGN_CENTER);
 			addHeaderTitles(document, tableName);
 
-			setTableHeader(table, headers);
+			setTableHeader(table, tableName, headers);
 			for (String[] row : rowsValues) {
 				if (isSummary) {
 					addRowSummary(table, row); // Use summary style
@@ -305,7 +350,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		baseColor = details.getBaseColor(); // Dynamically fetched Color
 		PdfPTable table = new PdfPTable(3);
 		table.setWidthPercentage(100);
-		table.setSpacingBefore(5f);
+		table.setSpacingBefore(4f);
 		table.setHorizontalAlignment(Element.ALIGN_CENTER);
 		float[] columnWidths = { 4f, 0f, 3f };
 		table.setWidths(columnWidths);
@@ -317,17 +362,15 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		firstCell.setPaddingBottom(6);
 		firstCell.setFixedHeight(20);
 		firstCell.setBackgroundColor(baseColor);
-		firstCell.setBorderWidth(1.5f);
 		firstCell.setBorderWidthRight(0f);
 
 		PdfPCell secondCell = new PdfPCell(
 				new Phrase(approvedDate, new Font(Font.TIMES_ROMAN, 12, Font.BOLD, Color.BLACK)));
 		secondCell.setBorderColor(Color.BLACK);
-		secondCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+		secondCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
 		secondCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 		secondCell.setPaddingBottom(6);
 		secondCell.setBackgroundColor(baseColor);
-		secondCell.setBorderWidth(1.5f);
 		secondCell.setBorderWidthLeft(0f);
 
 		PdfPCell spacerCell = new PdfPCell();
@@ -348,23 +391,24 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		PdfPTable table = new PdfPTable(3);
 		table.setWidthPercentage(tableWidth);
 		table.setSpacingBefore(5f);
-		table.setHorizontalAlignment(Element.ALIGN_LEFT);
-		float[] columnWidths = { cellwdith, spaceWidth, 4f };
+		table.setHorizontalAlignment(Element.ALIGN_RIGHT);
+		float[] columnWidths = { cellwdith, spaceWidth, 5f };
 		table.setWidths(columnWidths);
 
-		PdfPCell firstCell = new PdfPCell(new Phrase(key, new Font(Font.TIMES_ROMAN, 12, Font.NORMAL, Color.WHITE)));
+		PdfPCell firstCell = new PdfPCell(new Phrase(key, new Font(Font.TIMES_ROMAN, 9, Font.BOLD, Color.WHITE)));
 		firstCell.setBackgroundColor(Color.BLACK);
 		firstCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 		firstCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 		firstCell.setPaddingBottom(6);
 		firstCell.setFixedHeight(20);
 
-		PdfPCell secondCell = new PdfPCell(new Phrase(value, new Font(Font.TIMES_ROMAN, 12, Font.NORMAL, Color.BLACK)));
+		PdfPCell secondCell = new PdfPCell(new Phrase(value, new Font(Font.TIMES_ROMAN, 8, Font.NORMAL, Color.BLACK)));
 		secondCell.setBorderColor(Color.BLACK);
 		secondCell.setBorderWidth(1f);
 		secondCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 		secondCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-		secondCell.setPaddingBottom(6);
+		secondCell.setPaddingBottom(5);
+		secondCell.setNoWrap(false);
 
 		PdfPCell spacerCell = new PdfPCell();
 		spacerCell.setBorder(PdfPCell.NO_BORDER);
@@ -384,7 +428,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			float x = document.right() - 250;
 			float y = document.top() - 90;
 			PdfContentByte canvas = writer.getDirectContent();
-			int fontSize = 14;
+			int fontSize = 12;
 			float textWidth = 50f;
 			float textHeight = 34f;
 
@@ -411,14 +455,14 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 //			String imagePath = "/assets/upload.png";
 //			Image logo = loadImage(imagePath);
 //			logo.scaleToFit(120, 120);
-			float x = document.right() - 350;
+			float x = document.left();
 			float y = document.top() - 90;
 //			logo.setAbsolutePosition(x, y);
 //			writer.getDirectContent().addImage(logo);
 
 			PdfContentByte canvas = writer.getDirectContent();
-			float width = 350f;
-			float height = 75f;
+			float width = 150f;
+			float height = 72.5f;
 			canvas.saveState();
 			PdfGState gstate = new PdfGState();
 			gstate.setFillOpacity(0f);

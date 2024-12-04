@@ -36,8 +36,8 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	private static final Logger logger = LogManager.getLogger(PdfGeneratorServiceImplementation.class);
 
 	private static final String CP0 = "CP0";
-	private static final String WHY_PROJECT = "Why do the Project? :";
-	private static final String WHAT_PROJECT = "What do this project? :";
+	private static final String WHY_PROJECT = "Why do the Project?";
+	private static final String WHAT_PROJECT = "What do this project?";
 	private static final String APPROVER_COMMENTS = "Approver comments :";
 	private static final String PM_COMMENTS = "Project Managers comments :";
 	private static final String GAS = "Governance Audit Summary";
@@ -67,7 +67,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	 */
 	public byte[] generatePdf(long requestId, HttpHeaders headers) {
 
-		Document document = new Document(PageSize.A4.rotate());
+		Document document = new Document(PageSize.A4.rotate(), 36, 36, 36, 36);
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 
 		try {
@@ -188,16 +188,15 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	private void addCPContent(Document document, boolean isActive, long requestId, String cpName, PdfWriter writer)
 			throws DocumentException {
 		if (!cpName.equalsIgnoreCase(CP0)) {
-
 			document.newPage();
-
 		}
-		pDfGenerationHelpers.setCPHeaderImage(cpName, document, writer);
-		pDfGenerationHelpers.setCPHeaderTitleOnTopRight(cpName, document, writer);
 
-		//PDfGenerationHelpers.addChunkComments(document, WHAT_PROJECT, "N/A", 50, 2.5f, 0.05f);
-		////PDfGenerationHelpers.addChunkComments(document, WHY_PROJECT, "N/A", 50, 2.5f, 0.05f);
-		//PDfGenerationHelpers.addChunkComments(document, LINK_STRATEGY, "N/A", 50, 2.5f, 0.05f);
+		PDfGenerationHelpers.addChunkComments(document, WHAT_PROJECT, "N/A", 80, 1.25f, 0.015f);
+		PDfGenerationHelpers.addChunkComments(document, WHY_PROJECT, "N/A", 80, 1.25f, 0.015f);
+		PDfGenerationHelpers.addChunkComments(document, LINK_STRATEGY, "N/A", 80, 1.25f, 0.015f);
+		pDfGenerationHelpers.setCPHeaderImage(cpName, document, writer);
+
+		pDfGenerationHelpers.setCPHeaderTitleOnTopRight(cpName, document, writer);
 
 		if (!cpName.equalsIgnoreCase(CP0)) {
 			cpPageTemplate.addAnualizedSummaryCheckPoints(document, requestId, cpName);

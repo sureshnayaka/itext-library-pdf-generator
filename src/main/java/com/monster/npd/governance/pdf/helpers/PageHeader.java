@@ -205,15 +205,15 @@ public class PageHeader {
 						: null);
 
 				heading = market + "_" + brand + "_" + platform + "_" + variant + "_" + packageType;
-				float x = document.right() - 250;
+				float x = document.left();
 				float y = document.top() - 90;
 				PdfContentByte canvas = writer.getDirectContent();
 
 				canvas.beginText();
 				BaseFont baseFont = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
-				canvas.setFontAndSize(baseFont, 14);
+				canvas.setFontAndSize(baseFont, 12);
 				canvas.setColorFill(Color.WHITE);
-				canvas.showTextAligned(Element.ALIGN_CENTER, heading, x - 250, y + 100, 0);
+				canvas.showTextAligned(Element.ALIGN_CENTER, heading, x+200 , y + 100, 0);
 				canvas.endText();
 			}
 		} catch (Exception e) {

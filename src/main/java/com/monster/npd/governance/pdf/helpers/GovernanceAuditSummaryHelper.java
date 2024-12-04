@@ -3,11 +3,10 @@ package com.monster.npd.governance.pdf.helpers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.lowagie.text.*;
-import com.lowagie.text.Font;
-import com.lowagie.text.Image;
-import com.lowagie.text.pdf.*;
-
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.pdf.PdfPTable;
 
 @Component
 public class GovernanceAuditSummaryHelper {
@@ -23,7 +22,7 @@ public class GovernanceAuditSummaryHelper {
 		table.setHorizontalAlignment(Element.ALIGN_CENTER);
 		String[] headers = { "Name", "Action", "Comments", "Performed Date" };
 
-		PDfGenerationHelpers.setTableHeader(table, headers);
+		PDfGenerationHelpers.setTableHeader(table, "", headers);
 		long longValue = requestId;
 		int intValue = (int) longValue;
 
