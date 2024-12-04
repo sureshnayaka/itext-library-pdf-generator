@@ -1,230 +1,124 @@
 package com.monster.npd.governance.pdf.helpers;
 
+import java.awt.Color;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.monster.npd.governance.pdf.pojo.PageHeaderDetailsDTO;
-import com.monster.npd.governance.pdf.pojo.ProgramTag;
-import com.monster.npd.governance.pdf.pojo.ProjectSubType;
-import com.monster.npd.governance.pdf.pojo.ProjectType;
-import com.monster.npd.governance.pdf.pojo.ReportingQuarter;
-import com.monster.npd.governance.pdf.pojo.SubmissionRequest;
-import com.monster.npd.governance.pdf.pojo.SubmissionRequestGovernanceMilestone;
-import com.monster.npd.governance.pdf.pojo.UserIdentity;
-import com.monster.npd.governance.pdf.repository.ProgramTagRepository;
-import com.monster.npd.governance.pdf.repository.ProjectSubTypeRepository;
-import com.monster.npd.governance.pdf.repository.ProjectTypeRepository;
-import com.monster.npd.governance.pdf.repository.ReportingQuarterRepository;
-import com.monster.npd.governance.pdf.repository.SubmissionRequestGovernanceMilestoneRepository;
-import com.monster.npd.governance.pdf.repository.UserIdentityRepository;
-import com.monster.npd.governance.pdf.utils.Utils;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
-import com.lowagie.text.Font;
-import com.lowagie.text.FontFactory;
-import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.PdfContentByte;
-import com.lowagie.text.pdf.PdfPCell;
-import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
-
-import java.awt.*;
-
+import com.monster.npd.governance.pdf.utils.Utils;
 
 @Component
 public class PageHeader {
 
-	private static final Logger logger = LogManager.getLogger(PageHeader.class);
+	private static final Logger LOGGER = LogManager.getLogger(PageHeader.class);
 
-	@Autowired
-	private SubmissionRequestGovernanceMilestoneRepository submissionRequestGovernanceMilestoneRepository;
+	private static final float HEADER_FONT_SIZE = 12f;
+	private static final float LINE_HEIGHT = 14f;
+	private static final float MARGIN_OFFSET = 100f;
+	private static final float INITIAL_Y_OFFSET = 90f;
+	private static final String FONT_TYPE = BaseFont.TIMES_BOLD;
+	private static final String FONT_ENCODING = BaseFont.CP1252;
+	private static final boolean FONT_EMBEDDED = BaseFont.NOT_EMBEDDED;
+	private final CpDataProcessor cpDataProcessor;
 
-	@Autowired
-	private ProjectTypeRepository projectTypeRepository;
-
-	@Autowired
-	private ProjectSubTypeRepository projectSubTypeRepository;
-
-	@Autowired
-	private ProgramTagRepository programTagRepository;
-	@Autowired
-	private ReportingQuarterRepository reportingQuarter;
-	@Autowired
-	private UserIdentityRepository identityRepository;
-
-	@Autowired
-	CpDataProcessor cpDataProcessor;
-
-	public static void addPageHeaders(Document document, PageHeaderDetailsDTO headerDetailsDTO)
-			throws DocumentException, IllegalArgumentException, IllegalAccessException {
-//		PDfGenerationHelpers.addTitle(document, "Governance PDF Summary", false);
-		float[] columnWidths = { 2f, 3f };
-		PdfPTable table = new PdfPTable(columnWidths);
-		table.setWidthPercentage(50);
-		table.setHorizontalAlignment(Element.ALIGN_CENTER);
-		List<String> labels = List.of("Project Name", "Project Type", "Project Sub-type", "Program Tag",
-				"Reporting Quarter", "Currently Active Stage", "EZE PM", "Last CP Date");
-
-		Font labelFont = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, Font.BOLD);
-		Font valueFont = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9);
-		for (String label : labels) {
-			String value = getValueFromDTO(label, headerDetailsDTO);
-			PDfGenerationHelpers.addTableRow(table, label, value, labelFont, valueFont, Element.ALIGN_CENTER, 2,
-					Color.LIGHT_GRAY);
-		}
-
-		document.add(table);
-
+	public PageHeader(CpDataProcessor cpDataProcessor) {
+		this.cpDataProcessor = cpDataProcessor;
 	}
 
-	public PageHeaderDetailsDTO getHeaderData(Long requestId) {
-		if (Utils.isNullOrEmptyLong(requestId)) {
-			logger.error("Request Id is null or empty.");
-			return null;
-		}
-
-		try {
-			// Fetch request data
-			List<SubmissionRequestGovernanceMilestone> requestData = submissionRequestGovernanceMilestoneRepository
-					.findByIdRequestId(requestId);
-
-			if (requestData.isEmpty() || Utils.isNullOrEmptyObject(requestData.get(0).getSubmissionRequest())) {
-				logger.error("Null or empty Request!!");
-				return null;
-			}
-
-			// Extract submissionRequest
-			SubmissionRequest submissionRequest = requestData.get(0).getSubmissionRequest();
-
-			// Fetch related data using helper methods
-			String projectType = getProjectType(submissionRequest.getRPoCpProjectTypeId());
-			String projectSubType = getSubProjectType(submissionRequest.getRPoProjectSubTypeId());
-			String programTag = getProgramTag(submissionRequest.getRPoProgramTagId());
-			String reportingQuarter = getReportingQuarter(submissionRequest.getRPoPmDeliveryQuarterId());
-			String e2ePMName = getUserName(submissionRequest.getRPoE2ePmId());
-			String cpLastActiveDate = cpDataProcessor.getLastCPDate(requestId);
-
-			// Create DTO object
-			PageHeaderDetailsDTO pageHeaderDetailsDTO = new PageHeaderDetailsDTO(submissionRequest.getProjectName(),
-					projectType, projectSubType, programTag, reportingQuarter,
-					"CP-" + submissionRequest.getCurrentCheckpoint(), e2ePMName, cpLastActiveDate);
-
-			logger.debug("PageHeaderDetailsDTO: {}", new ObjectMapper().writeValueAsString(pageHeaderDetailsDTO));
-
-			return pageHeaderDetailsDTO;
-
-		} catch (JsonProcessingException e) {
-			logger.error("Error occurred while processing JSON: {}", e.getMessage());
-		} catch (Exception e) {
-			logger.error("Error occurred while fetching header details: {}", e.getMessage());
-		}
-
-		return null;
-	}
-
-	private <T> String getDisplayName(Optional<Long> id, Function<Long, Optional<T>> repositoryFunction,
-			Function<T, String> displayNameExtractor) {
-		try {
-			return id.flatMap(repositoryFunction).map(displayNameExtractor).orElse("N/A");
-		} catch (Exception e) {
-			logger.error("Error occurred while fetching display name: {}", e.getMessage(), e);
-			return "";
-		}
-	}
-
-	public String getProjectType(Long projectTypeId) {
-		return getDisplayName(Optional.ofNullable(projectTypeId), projectTypeRepository::findById,
-				ProjectType::getDisplayName);
-	}
-
-	public String getSubProjectType(Long projectSubTypeId) {
-		return getDisplayName(Optional.ofNullable(projectSubTypeId), projectSubTypeRepository::findById,
-				ProjectSubType::getDisplayName);
-	}
-
-	public String getProgramTag(Long programTagId) {
-		return getDisplayName(Optional.ofNullable(programTagId), programTagRepository::findById,
-				ProgramTag::getDisplayName);
-	}
-
-	public String getReportingQuarter(Long reportingQuarterId) {
-		return getDisplayName(Optional.ofNullable(reportingQuarterId), reportingQuarter::findById,
-				ReportingQuarter::getDisplayName);
-	}
-
-	public String getUserName(Long e2epmId) {
-		return getDisplayName(Optional.ofNullable(e2epmId), identityRepository::findById, UserIdentity::getDisplayName);
-	}
-
-	private static String getValueFromDTO(String label, PageHeaderDetailsDTO dto) {
-		return Optional.ofNullable(dto).map(d -> {
-			return switch (label) {
-			case "Project Name" -> d.getProjectName();
-			case "Project Type" -> d.getProjectType();
-			case "Project Sub-type" -> d.getProjectSubType();
-			case "Program Tag" -> d.getProgramTag();
-			case "Reporting Quarter" -> d.getReportingQ();
-			case "Currently Active Stage" -> d.getCurrentActiveCP();
-			case "EZE PM" -> d.getE2ePm();
-			case "Last CP Date" -> d.getLastCPdate();
-			default -> "N/A";
-			};
-		}).orElse("-");
-	}
-
+	/**
+	 * Sets the main heading of the PDF page.
+	 *
+	 * @param writer    the PDF writer
+	 * @param document  the PDF document
+	 * @param requestId the request ID
+	 * @return the heading text
+	 */
 	public String setMainHeading(PdfWriter writer, Document document, Long requestId) {
 		String heading = "";
 		try {
-			SubmissionRequest submissionRequest = cpDataProcessor.getSubmissionRequest(requestId);
-			if (!Utils.isNullOrEmptyObject(submissionRequest)) {
-				// Safely handle null for each object in the chain
-				String market = getDisplayNameOrDefault(
-						submissionRequest.getLeadMarket() != null ? submissionRequest.getLeadMarket().getDisplayName()
-								: null);
-				String brand = getDisplayNameOrDefault(
-						submissionRequest.getBrands() != null ? submissionRequest.getBrands().getDisplayName() : null);
-				String platform = getDisplayNameOrDefault(
-						submissionRequest.getPlatforms() != null ? submissionRequest.getPlatforms().getDisplayName()
-								: null);
-				String variant = getDisplayNameOrDefault(
-						submissionRequest.getVariantSku() != null ? submissionRequest.getVariantSku().getDisplayName()
-								: null);
-				String packageType = getDisplayNameOrDefault(submissionRequest.getPackagingType() != null
-						? submissionRequest.getPackagingType().getDisplayName()
-						: null);
-
-				heading = market + "_" + brand + "_" + platform + "_" + variant + "_" + packageType;
-				float x = document.left();
-				float y = document.top() - 90;
-				PdfContentByte canvas = writer.getDirectContent();
-
-				canvas.beginText();
-				BaseFont baseFont = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
-				canvas.setFontAndSize(baseFont, 12);
-				canvas.setColorFill(Color.WHITE);
-				canvas.showTextAligned(Element.ALIGN_CENTER, heading, x+200 , y + 100, 0);
-				canvas.endText();
+			heading = cpDataProcessor.getHeaderValues(requestId);
+			if (Utils.isNullOrEmptyString(heading)) {
+				LOGGER.warn("Heading is null or empty for requestId: {}", requestId);
+				return "";
 			}
+
+			drawHeading(writer, document, heading);
 		} catch (Exception e) {
-			logger.error(e.getLocalizedMessage(), e);
+			LOGGER.error("Error while setting main heading: {}", e.getMessage(), e);
 		}
 		return heading;
-
 	}
 
-	private String getDisplayNameOrDefault(String displayName) {
-		return (displayName == null || displayName.isEmpty()) ? "N/A" : displayName;
+	/**
+	 * Draws the heading on the PDF document.
+	 *
+	 * @param writer   the PDF writer
+	 * @param document the PDF document
+	 * @param heading  the heading text
+	 * @throws IOException 
+	 * @throws DocumentException 
+	 */
+	private void drawHeading(PdfWriter writer, Document document, String heading) throws DocumentException, IOException {
+		float x = document.left() + 20;
+		float y = document.top() - INITIAL_Y_OFFSET;
+		PdfContentByte canvas = writer.getDirectContent();
+		BaseFont baseFont = BaseFont.createFont(FONT_TYPE, FONT_ENCODING, FONT_EMBEDDED);
+
+		canvas.beginText();
+		canvas.setFontAndSize(baseFont, HEADER_FONT_SIZE);
+		canvas.setColorFill(Color.WHITE);
+
+		float maxWidth = document.right() - document.left() - MARGIN_OFFSET;
+		float currentY = y + 100;
+
+		for (String line : wrapText(heading, baseFont, HEADER_FONT_SIZE, maxWidth)) {
+			canvas.showTextAligned(Element.ALIGN_LEFT, line, x, currentY, 0);
+			currentY -= LINE_HEIGHT;
+		}
+
+		canvas.endText();
 	}
 
+	/**
+	 * Wraps text into multiple lines based on the maximum width.
+	 *
+	 * @param text     the text to wrap
+	 * @param font     the font used for the text
+	 * @param fontSize the size of the font
+	 * @param maxWidth the maximum width for a single line
+	 * @return a list of wrapped text lines
+	 */
+	private List<String> wrapText(String text, BaseFont font, float fontSize, float maxWidth) {
+		List<String> lines = new ArrayList<>();
+		StringBuilder currentLine = new StringBuilder();
+		float currentWidth = 0;
+
+		for (String word : text.split(" ")) {
+			float wordWidth = font.getWidthPoint(word + " ", fontSize);
+			if (currentWidth + wordWidth > maxWidth) {
+				lines.add(currentLine.toString().trim());
+				currentLine = new StringBuilder(word).append(" ");
+				currentWidth = wordWidth;
+			} else {
+				currentLine.append(word).append(" ");
+				currentWidth += wordWidth;
+			}
+		}
+
+		if (!currentLine.toString().trim().isEmpty()) {
+			lines.add(currentLine.toString().trim());
+		}
+
+		return lines;
+	}
 }

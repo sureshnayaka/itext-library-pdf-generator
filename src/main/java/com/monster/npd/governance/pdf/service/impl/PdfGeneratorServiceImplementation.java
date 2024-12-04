@@ -13,19 +13,17 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.pdf.PdfWriter;
 import com.monster.npd.governance.pdf.helpers.CPPageTemplate;
 import com.monster.npd.governance.pdf.helpers.CpDataProcessor;
-import com.monster.npd.governance.pdf.helpers.GovernanceAuditSummaryHelper;
-import com.monster.npd.governance.pdf.helpers.GovernanceVolumeSummary;
 import com.monster.npd.governance.pdf.helpers.PDfGenerationHelpers;
 import com.monster.npd.governance.pdf.helpers.PageHeader;
 import com.monster.npd.governance.pdf.pojo.CP;
 import com.monster.npd.governance.pdf.pojo.SubmissionGovernanceMilestone;
+import com.monster.npd.governance.pdf.pojo.SubmissionRequest;
 import com.monster.npd.governance.pdf.pojo.SubmissionRequestGovernanceMilestone;
 import com.monster.npd.governance.pdf.service.PdfGeneratorInterface;
 import com.monster.npd.governance.pdf.utils.Utils;
@@ -38,20 +36,14 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	private static final String CP0 = "CP0";
 	private static final String WHY_PROJECT = "Why do the Project?";
 	private static final String WHAT_PROJECT = "What do this project?";
-	private static final String APPROVER_COMMENTS = "Approver comments :";
-	private static final String PM_COMMENTS = "Project Managers comments :";
-	private static final String GAS = "Governance Audit Summary";
-	private static final String GVS = "Governance Volume Summary";
+	private static final String APPROVER_COMMENTS = "Approver comments";
+	private static final String PM_COMMENTS = "Project Managers comments";
 	private static final String SAME_PREVIOUS_CP = " is same as previous CP";
 	private static final String LINK_STRATEGY = "Link to stratergy";
 	private static final String CM_COMMENTS = "Commercial comments";
 
 	@Autowired
 	CPPageTemplate cpPageTemplate;
-	@Autowired
-	GovernanceAuditSummaryHelper governanceAuditSummary;
-	@Autowired
-	GovernanceVolumeSummary governanceVolumeSummary;
 	@Autowired
 	PageHeader pageHeader;
 	@Autowired
@@ -67,7 +59,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	 */
 	public byte[] generatePdf(long requestId, HttpHeaders headers) {
 
-		Document document = new Document(PageSize.A4.rotate(), 36, 36, 36, 36);
+		Document document = new Document(PageSize.A4.rotate(), 32, 32, 32, 32);// margin 0.5 inches to remove the bleed
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 
 		try {
@@ -86,10 +78,9 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 			PdfWriter writer = PdfWriter.getInstance(document, out);
 			writer.setPageEvent(generationHelpers);
 			document.open();
-			String header = pageHeader.setMainHeading(writer, document, requestId);
+			String header = cpHelper.getHeaderValues(requestId);
 			// Initialize the CP data in the document
 			initializeCP(document, cp, requestId, writer);
-			// initalizeGovernanceAuditAndVolumeSummary(document, requestId);
 
 			// TODO need to know how to name should be for PDF
 			headers.setContentType(MediaType.APPLICATION_PDF);
@@ -109,28 +100,6 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		return out.toByteArray();
 	}
 
-	/**
-	 * Initalize Aduit and volume summary on page end
-	 * 
-	 * @param document
-	 */
-	public void initalizeGovernanceAuditAndVolumeSummary(Document document, long requestId) {
-		try {
-			document.newPage();
-			PDfGenerationHelpers.addTitle(document, GAS, false);
-			governanceAuditSummary.addGovernanceAuditSummary(document, requestId);
-			if (cpHelper.isApprovedCp(requestId)) {
-				PDfGenerationHelpers.addTitle(document, GVS, false);
-				governanceVolumeSummary.governanceVolumeSummary(document, requestId);
-			}
-			System.err.println(cpHelper.isApprovedCp(requestId));
-
-		} catch (DocumentException | JsonProcessingException e) {
-			logger.error("Error in initalizing PDF Summary : {}", e.getMessage(), e);
-		} finally {
-			document.close();
-		}
-	}
 
 	/**
 	 * Initalize CP to print on the document based on the input list of CP
@@ -140,7 +109,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	 */
 	public void initializeCP(Document document, List<CP> cpList, long requestId, PdfWriter writer) {
 		try {
-			if (cpList.size() <= 0) {
+			if (cpList.isEmpty()) {
 				throw new DocumentException("Atleast one cpList is required to generate PDF.");
 			}
 			cpList.forEach(cpObj -> {
@@ -169,14 +138,14 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		String cpName = cpObj.getCpName();
 
 		boolean isSamePreviousCP = Optional.ofNullable(cpObj.getIsSamePreviourCP()).orElse(false);
-		boolean isActiveCP = Optional.ofNullable(cpObj.getIsActive()).orElse(false);
+//		boolean isActiveCP = Optional.ofNullable(cpObj.getIsActive()).orElse(false);
 
 		if (isSamePreviousCP) {
 			document.newPage();
 			PDfGenerationHelpers.addTitle(document, cpName.concat(SAME_PREVIOUS_CP), false);
 			return;
 		}
-		addCPContent(document, isActiveCP, requestId, cpName, writer);
+		addCPContent(document, requestId, writer, cpObj );
 	}
 
 	/**
@@ -185,14 +154,16 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	 * @param document
 	 * @throws DocumentException
 	 */
-	private void addCPContent(Document document, boolean isActive, long requestId, String cpName, PdfWriter writer)
-			throws DocumentException {
+	private void addCPContent(Document document, long requestId, PdfWriter writer, CP cp) throws DocumentException {
+		String cpName = cp.getCpName();
+		String pmComments = cp.getPmComments();
+		String cmComments = cp.getCommercialRelationalComments();
+		String approverComments = cp.getApproverComments();
 		if (!cpName.equalsIgnoreCase(CP0)) {
 			document.newPage();
 		}
-
-		PDfGenerationHelpers.addChunkComments(document, WHAT_PROJECT, "N/A", 80, 1.25f, 0.015f);
-		PDfGenerationHelpers.addChunkComments(document, WHY_PROJECT, "N/A", 80, 1.25f, 0.015f);
+		pageHeader.setMainHeading(writer, document, requestId);
+		addProjectDetails(document, requestId);
 		PDfGenerationHelpers.addChunkComments(document, LINK_STRATEGY, "N/A", 80, 1.25f, 0.015f);
 		pDfGenerationHelpers.setCPHeaderImage(cpName, document, writer);
 
@@ -208,19 +179,20 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		cpPageTemplate.addMarketScopeTableForCp(document, requestId, cpName);
 		cpPageTemplate.addDeliverablesVSThresholdForCp(document, requestId, cpName);
 
-		if (cpName.equalsIgnoreCase(CP0)) {
-			cpPageTemplate.addPortFolioStartegyForCp0(document, requestId);
+		if (cpName.equalsIgnoreCase(CP0)|| cpName.equalsIgnoreCase("CP1")) {
+			cpPageTemplate.addPortFolioStartegyForCp0(document, requestId, cp);
 
 		}
 
 		if (!cpName.equalsIgnoreCase(CP0)) {
-			PDfGenerationHelpers.addChunkComments(document, PM_COMMENTS, "N/A", 100, 1f, 0.015f);
-			PDfGenerationHelpers.addChunkComments(document, CM_COMMENTS, "From “Commercial Rational for changes", 100,
-					1f, 0.015f);
+			PDfGenerationHelpers.addChunkComments(document, PM_COMMENTS,
+					!Utils.isNullOrEmptyString(pmComments) ? pmComments : "N/A", 100, 1f, 0.015f);
+			PDfGenerationHelpers.addChunkComments(document, CM_COMMENTS,
+					!Utils.isNullOrEmptyString(cmComments) ? cmComments : "N/A", 100, 1f, 0.015f);
 		}
 
-		PDfGenerationHelpers.addChunkComments(document, APPROVER_COMMENTS, "Some comments from approver", 100, 1f,
-				0.015f);
+		PDfGenerationHelpers.addChunkComments(document, APPROVER_COMMENTS,
+				!Utils.isNullOrEmptyString(approverComments) ? approverComments : "N/A", 100, 1f, 0.015f);
 
 	}
 
@@ -238,19 +210,23 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 
 		return " ";
 	}
+
+	private void addProjectDetails(Document document, long requestId) {
+
+		Optional<SubmissionRequest> submissionRequestOpt = cpHelper.getProjectDetailsForCP0(requestId);
+		submissionRequestOpt.ifPresent(submissionRequest -> {
+			try {
+				PDfGenerationHelpers.addChunkComments(document, WHAT_PROJECT,
+						" " + cpPageTemplate.getValueOrDefault(Optional.ofNullable(submissionRequest.getWhyProject())),
+						80, 1.25f, 0.015f);
+				PDfGenerationHelpers.addChunkComments(document, WHY_PROJECT,
+						" " + cpPageTemplate
+								.getValueOrDefault(Optional.ofNullable(submissionRequest.getProjectAbout())),
+						80, 1.25f, 0.015f);
+
+			} catch (DocumentException e) {
+				logger.error("Error occured in fetching project comments {}", e.getMessage());
+			}
+		});
+	}
 }
-//private void addProjectDetails(Document document, long requestId) {
-//
-//	Optional<SubmissionRequest> submissionRequestOpt = cpHelper.getProjectDetailsForCP0(requestId);
-//	submissionRequestOpt.ifPresent(submissionRequest -> {
-//		try {
-//
-//			PDfGenerationHelpers.addChunkParagraph(document, WHY_PROJECT,
-//					" " + cpPageTemplate.getValueOrDefault(Optional.ofNullable(submissionRequest.getWhyProject())));
-//			PDfGenerationHelpers.addChunkParagraph(document, ABOUT_PROJECT, " "
-//					+ cpPageTemplate.getValueOrDefault(Optional.ofNullable(submissionRequest.getProjectAbout())));
-//		} catch (DocumentException e) {
-//			logger.error("Error occured in fetching project comments {}", e.getMessage());
-//		}
-//	});
-//}

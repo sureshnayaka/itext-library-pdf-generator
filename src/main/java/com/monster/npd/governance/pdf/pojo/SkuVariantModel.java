@@ -19,7 +19,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @Entity
 @ToString
-@Table(name = "LookUpDomainVariantSKU")
+@Table(name = "LookUpDomainModelVariant_SKU")
 public class SkuVariantModel {
 
 	@Id
@@ -29,7 +29,7 @@ public class SkuVariantModel {
 	@Column(name = "Name")
 	private String name;
 
-	@Column(name = "display_name")
+	@Column(name = "displayname")
 	private String displayName;
 
 }

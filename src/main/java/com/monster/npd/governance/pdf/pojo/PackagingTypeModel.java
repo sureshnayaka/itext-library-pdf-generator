@@ -19,7 +19,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @Entity
 @ToString
-@Table(name = "LookUpDomainPackaging_Type")
+@Table(name = "LookUpDomainModelPackaging_Type")
 public class PackagingTypeModel {
 
 	@Id

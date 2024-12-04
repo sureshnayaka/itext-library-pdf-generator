@@ -43,6 +43,8 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			FontFactory.getFont(FontFactory.TIMES_ROMAN, 14, Font.BOLD, Color.BLACK));
 	private static final Font TITLE_FONT_ACTIVE = new Font(
 			FontFactory.getFont(FontFactory.TIMES_ROMAN, 14, Font.BOLD, new Color(38, 86, 66)));
+	private static final String HEADER_PATH ="/assets/headerM.png";
+	private static final String BACKGROUND_PATH ="/assets/Back.jpg";
 
 	@Override
 	public void onStartPage(PdfWriter writer, Document document) {
@@ -55,28 +57,8 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 		}
 	}
 
-//	public void setBackground(PdfWriter writer) throws DocumentException {
-//	    // Load background image
-//	    Image backgroundImage = loadImage("/assets/Back.jpg");
-//	    
-//	    // Scale to cover the entire page with bleed
-//	    float bleedMargin = 10f; // Extend slightly for bleed
-//	    backgroundImage.scaleAbsolute(PageSize.A4.getHeight() + bleedMargin, PageSize.A4.getWidth() + bleedMargin);
-//	    
-//	    // Set opacity
-//	    PdfGState gState = new PdfGState();
-//	    gState.setFillOpacity(0.1f); // 10% opacity
-//	    
-//	    // Add to canvas
-//	    PdfContentByte canvas = writer.getDirectContentUnder();
-//	    canvas.setGState(gState);
-//	    System.err.println(-bleedMargin / 2);
-//	    backgroundImage.setAbsolutePosition(-bleedMargin / 2, -bleedMargin / 2); // Center the bleed
-//	    canvas.addImage(backgroundImage);
-//	}
-
 	public void setBackground(PdfWriter writer) throws DocumentException {
-		Image backgroundImage = loadImage("/assets/Back.jpg");
+		Image backgroundImage = loadImage(BACKGROUND_PATH);
 		backgroundImage.scaleAbsolute(PageSize.A4.getHeight(), PageSize.A4.getWidth());
 		backgroundImage.setAbsolutePosition(0, 0);
 
@@ -89,7 +71,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	}
 
 	public void setHeader(PdfWriter writer, Document document) throws DocumentException {
-		Image headerImage = loadImage("/assets/headerM.png");
+		Image headerImage = loadImage(HEADER_PATH);
 
 		float headerHeight = 40f;
 		PdfGState gState = new PdfGState();
@@ -120,19 +102,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	@Override
 	public void onEndPage(PdfWriter writer, Document document) {
 		try {
-			// background image
-			// PdfContentByte canvas = writer.getDirectContentUnder();
-
-			// canvas.addImage(backgroundImage);
-//	
-			// background color
-
-//			canvas.setColorFill(new Color(233, 233, 233));
-//
-//			canvas.rectangle(0, 0, document.getPageSize().getWidth(), document.getPageSize().getHeight());
-//			canvas.fill();
-
-			// footer copy right text
+			
 			ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_CENTER,
 					new Phrase(String.valueOf(document.getPageNumber()),
 							new Font(Font.TIMES_ROMAN, 12, Font.NORMAL, Color.BLACK)),
@@ -281,16 +251,12 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			}
 
 			if (headerValue.contains("(") && headerValue.contains(")")) {
-
-				// Split text into parts
 				String mainText = headerValue.substring(0, headerValue.indexOf("(")).trim();
 				String parenthesesText = headerValue.substring(headerValue.indexOf("("));
 
-				// Create chunks with different fonts
 				Chunk mainChunk = new Chunk(mainText + " ", headerFont); // Main text
 				Chunk parenthesesChunk = new Chunk(parenthesesText, smallerFont); // Text in parentheses
 
-				// Combine chunks into a phrase
 				Phrase phrase = new Phrase();
 				phrase.add(mainChunk);
 				phrase.add(parenthesesChunk);
@@ -390,7 +356,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 
 		PdfPTable table = new PdfPTable(3);
 		table.setWidthPercentage(tableWidth);
-		table.setSpacingBefore(5f);
+		table.setSpacingBefore(3f);
 		table.setHorizontalAlignment(Element.ALIGN_RIGHT);
 		float[] columnWidths = { cellwdith, spaceWidth, 5f };
 		table.setWidths(columnWidths);
@@ -429,21 +395,21 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 			float y = document.top() - 90;
 			PdfContentByte canvas = writer.getDirectContent();
 			int fontSize = 12;
-			float textWidth = 50f;
-			float textHeight = 34f;
+			float textWidth = 36f;
+			float textHeight = 26f;
 
 			CheckpointHandler.CheckpointDetails details = CheckpointHandler.getCheckpointDetails(cpName);
 			Color baseColor = details.getBaseColor();
 			canvas.setColorFill(baseColor);
-			float rectX = x + 250 - textWidth / 2;
-			float rectY = y + 105 - textHeight / 2;
+			float rectX = x + 260 - textWidth / 2;
+			float rectY = y + 100 - textHeight / 2;
 			canvas.rectangle(rectX, rectY, textWidth, textHeight);
 			canvas.fill();
 			canvas.beginText();
 			canvas.setFontAndSize(baseFont, fontSize);
 			canvas.setColorFill(Color.BLACK);
 			canvas.setLineDash(2);
-			canvas.showTextAligned(Element.ALIGN_CENTER, cpName, x + 250, y + 100, 0);
+			canvas.showTextAligned(Element.ALIGN_CENTER, cpName, x + 260, y + 95, 0);
 			canvas.endText();
 		} catch (Exception exception) {
 			logger.error(exception.getMessage());
@@ -452,17 +418,12 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 
 	public void setCPHeaderImage(String cpName, Document document, PdfWriter writer) {
 		try {
-//			String imagePath = "/assets/upload.png";
-//			Image logo = loadImage(imagePath);
-//			logo.scaleToFit(120, 120);
+			
 			float x = document.left();
-			float y = document.top() - 90;
-//			logo.setAbsolutePosition(x, y);
-//			writer.getDirectContent().addImage(logo);
-
+			float y = document.top() - 82;	
 			PdfContentByte canvas = writer.getDirectContent();
 			float width = 150f;
-			float height = 72.5f;
+			float height = 67.5f;
 			canvas.saveState();
 			PdfGState gstate = new PdfGState();
 			gstate.setFillOpacity(0f);

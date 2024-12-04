@@ -19,50 +19,63 @@ import lombok.Setter;
 @Setter
 public class SubmissionGovernanceMilestone {
 
-    @Id
-    @Column(name = "Id")
-    private Long id;
+	@Id
+	@Column(name = "Id")
+	private Long id;
 
-    @Column(name = "Stage", length = 64)
-    private String stage;
+	@Column(name = "Stage", length = 64)
+	private String stage;
 
-    @Column(name = "Decision", length = 64)
-    private String decision;
+	@Column(name = "Decision", length = 64)
+	private String decision;
 
-    @Column(name = "Decision_Date")
+	@Column(name = "Decision_Date")
 	@JsonFormat(pattern = "yyyy-MM-dd")
-    private Date decisionDate;
+	private Date decisionDate;
 
-    @Column(name = "Target_Start_Date")
-    private Date targetStartDate;
+	@Column(name = "Target_Start_Date")
+	private Date targetStartDate;
 
-    @Lob
-    @Column(name = "Comments")
-    private String comments;
+	@Lob
+	@Column(name = "Comments")
+	private String comments;
 
-    @Column(name = "RevisedTargetDate")
-    private Date revisedTargetDate;
+	@Column(name = "RevisedTargetDate")
+	private Date revisedTargetDate;
 
-    @Column(name = "LiveDate")
-    private Date liveDate;
+	@Column(name = "LiveDate")
+	private Date liveDate;
 
-    @Column(name = "S_ITEM_STATUS")
-    private Integer sItemStatus;
+	@Column(name = "S_ITEM_STATUS")
+	private Integer sItemStatus;
 
-    @Column(name = "S_IS_TEMPORARY_COPY")
-    private Boolean sIsTemporaryCopy;
+	@Column(name = "IsCommercialChangeToPreviousCPs")
+	private Boolean isSamePreviousCp;
 
-    @Lob
-    @Column(name = "S_TEMPORARY_COPY_DATA")
-    private byte[] sTemporaryCopyData;
+	@Lob
+	@Column(name = "S_TEMPORARY_COPY_DATA")
+	private byte[] sTemporaryCopyData;
 
-//    @Column(name = "CommercialRationaleForChanges", length = 64)
-//    private String commercialRationaleForChanges;
-//
-//    @Column(name = "GovernanceApproach", length = 64)
-//    private String governanceApproach;
-//
-//    @Lob
-//    @Column(name = "ProjectManagerComments")
-//    private String projectManagerComments;
+	@Column(name = "CommercialRationaleForChanges", length = 64)
+	private String commercialRationaleForChanges;
+
+	@Lob
+	@Column(name = "ProjectManagerComments")
+	private String projectManagerComments;
+
+	@Column(name = "IncrementalReplacemntalSKU")
+	private String incrementalReplacemntalSKU;
+
+	@Column(name = "PortfolioDelistStrategy")
+	private String portfolioDelistStrategy;
+
+	@Column(name = "SpecificSKUCutOffIntro")
+	private String specificSKUCutOffIntro;
+
+	@Column(name = "SwitchDateAndDrivingDateReason")
+	private String switchDateAndDrivingDateReason;
+
+	@Column(name = "CommercialStrategy")
+	private String commercialStrategy;
+
 }

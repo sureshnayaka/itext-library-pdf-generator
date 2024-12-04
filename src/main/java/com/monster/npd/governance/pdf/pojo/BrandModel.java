@@ -19,7 +19,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @Entity
 @ToString
-@Table(name = "LookUpDomainBrands")
+@Table(name = "LookUpDomainModelBrands")
 public class BrandModel {
 
 	@Id
@@ -29,7 +29,7 @@ public class BrandModel {
 	@Column(name = "Name")
 	private String name;
 
-	@Column(name = "display_name")
+	@Column(name = "displayname")
 	private String displayName;
 
 }

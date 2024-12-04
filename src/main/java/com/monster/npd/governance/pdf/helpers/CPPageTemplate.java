@@ -12,20 +12,18 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.monster.npd.governance.pdf.pojo.CP;
 import com.monster.npd.governance.pdf.pojo.DeliverableThreshold;
 import com.monster.npd.governance.pdf.pojo.DeliverableThresholdDTO;
 import com.monster.npd.governance.pdf.pojo.MarketScope;
 import com.monster.npd.governance.pdf.pojo.MarketScopeDTO;
 import com.monster.npd.governance.pdf.pojo.MarketScopeSummary;
-import com.monster.npd.governance.pdf.pojo.SubmissionRequest;
+import com.monster.npd.governance.pdf.table.config.CpSummaryTableFieldConfig;
 import com.monster.npd.governance.pdf.table.config.DeliverableThresholdTableFieldConfig;
 import com.monster.npd.governance.pdf.table.config.MarketScopeTableFieldConfig;
 import com.monster.npd.governance.pdf.table.config.PortfolioTableFieldConfig;
-
-import com.lowagie.text.*;
-import com.lowagie.text.Font;
-import com.lowagie.text.Image;
-import com.lowagie.text.pdf.*;
 
 @Component
 public class CPPageTemplate {
@@ -38,6 +36,7 @@ public class CPPageTemplate {
 	private static final String DEFAULT_VALUE = "N/A";
 	private static final String THIS_PROJECT = "This Project";
 	private static final String MONSTER_GREEN = "% of Monster Green";
+	private static final String SUMMARY_TABLE_TITLE = "Summary changes versus last checkpoint";
 
 	@Autowired
 	private CpDataProcessor cpHelper;
@@ -50,6 +49,9 @@ public class CPPageTemplate {
 
 	@Autowired
 	private PortfolioTableFieldConfig portfolioTableFieldConfig;
+
+	@Autowired
+	private CpSummaryTableFieldConfig cpSummaryTableFieldConfig;
 
 	/**
 	 * 
@@ -93,25 +95,19 @@ public class CPPageTemplate {
 		PDfGenerationHelpers.addTableData(document, DELIVERABLE_THRESHOLD_TITLE, columnWidths, rowData, headers, false);
 	}
 
-	public void addPortFolioStartegyForCp0(Document document, long requestId) throws DocumentException {
+	public void addPortFolioStartegyForCp0(Document document, long requestId, CP cp) throws DocumentException {
 
 		float[] columnWidths = { 3.5f, 3.5f, 3f, 3f, 5f, };
 
 		String[] headers = portfolioTableFieldConfig.getHeaders().toArray(new String[0]);
 
-		Optional<SubmissionRequest> submissionRequestOpt = cpHelper.getProjectDetailsForCP0(requestId);
+		String[][] rowData = { { getValueOrDefault(Optional.ofNullable(cp.getIncrementalReplacemntalSKU())),
+				getValueOrDefault(Optional.ofNullable(cp.getPortfolioDelistStrategy())),
+				getValueOrDefault(Optional.ofNullable(cp.getSpecificSKUCutOffIntro())),
+				getValueOrDefault(Optional.ofNullable(cp.getSwitchDateAndDrivingDateReason())),
+				getValueOrDefault(Optional.ofNullable(cp.getCommercialStrategy())) } };
 
-		submissionRequestOpt.ifPresent(submissionRequest -> {
-			String[][] rowData = {
-					{ getValueOrDefault(Optional.ofNullable(submissionRequest.getIncrementalReplacementSku())),
-							getValueOrDefault(Optional.ofNullable(submissionRequest.getPortfolioDelistStrategy())),
-							getValueOrDefault(Optional.ofNullable(submissionRequest.getSpecificSkuCutOffIntro())),
-							getValueOrDefault(
-									Optional.ofNullable(submissionRequest.getSwitchDateAndDrivingDateReason())),
-							getValueOrDefault(Optional.ofNullable(submissionRequest.getCommercialStrategy())) } };
-
-			PDfGenerationHelpers.addTableData(document, PORTFOLIO_TITLE, columnWidths, rowData, headers, false);
-		});
+		PDfGenerationHelpers.addTableData(document, PORTFOLIO_TITLE, columnWidths, rowData, headers, false);
 
 	}
 
@@ -134,16 +130,12 @@ public class CPPageTemplate {
 
 		System.out.println("leadeMarketScope contains " + leadeMarketScope.size() + " items");
 		String[][] rowData = getTableContentForCpSummary(leadeMarketScope);
-		// String[][] rowData = {{"0","100000","n/a"," ", "", ""}, {"0","100000","40","
-		// ", "", ""}};
-		String[] headers = { "Checkpoint ", "Annualised Vol [24 Eq cases]", "% Volume v/s Prior CP",
-				"Anualised NSV [€]", "GM%", "Aligned DP Date" };
-		PDfGenerationHelpers.addTableData(document, "Summary changes versus last checkpoint", columnWidths, rowData,
-				headers, true);
+		String[] headers = cpSummaryTableFieldConfig.getHeaders().toArray(new String[0]);
+
+		PDfGenerationHelpers.addTableData(document, SUMMARY_TABLE_TITLE, columnWidths, rowData, headers, true);
 
 	}
 
-	// Helper function to handle null or empty checks using Optional
 	public String getValueOrDefault(Optional<String> value) {
 		return value.filter(v -> !v.trim().isEmpty()).orElse(DEFAULT_VALUE);
 	}
@@ -153,15 +145,13 @@ public class CPPageTemplate {
 				.orElse(DEFAULT_VALUE);
 
 		Function<MarketScope, String> leadMarketValue = scope -> Boolean.TRUE.equals(scope.getLeadMarket()) ? "Y" : "N";
-		return commercialMarketScopes.stream()
-				.map(scope -> new String[] { "Great Britain", leadMarketValue.apply(scope),
-						processNumber(scope.getThreeMonthLaunchVolume()),
-						processNumber(scope.getAnnualisedYear1Volume()),
-						processNumber(scope.getCannibalisationImpact()), processNumber(scope.getNsvCase()),
-						processNumber(scope.getCogCase()), processNumber(scope.getAnnualisedYear1NSVLocalCurrency()),
-						processNumber(scope.getAnnualisedYear1NSVEuro()),
-						processNumber(scope.getGrossProfit()).concat("€"), processNumber(scope.getGrossMargin()).concat("%"),
-						defaultValue.apply(scope.getTargetDPInWarehouse()) })
+		return commercialMarketScopes.stream().map(scope -> new String[] { "Great Britain",
+				leadMarketValue.apply(scope), processNumber(scope.getThreeMonthLaunchVolume()),
+				processNumber(scope.getAnnualisedYear1Volume()), processNumber(scope.getCannibalisationImpact()),
+				processNumber(scope.getNsvCase()), processNumber(scope.getCogCase()),
+				processNumber(scope.getAnnualisedYear1NSVLocalCurrency()),
+				processNumber(scope.getAnnualisedYear1NSVEuro()), processNumber(scope.getGrossProfit()).concat("€"),
+				processNumber(scope.getGrossMargin()).concat("%"), defaultValue.apply(scope.getTargetDPInWarehouse()) })
 				.toArray(String[][]::new);
 	}
 

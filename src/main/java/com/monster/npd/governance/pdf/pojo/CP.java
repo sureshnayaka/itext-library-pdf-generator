@@ -12,5 +12,13 @@ public class CP {
 	private String cpName;
 	private Boolean isSamePreviourCP;
 	private Boolean isActive;
+	private String approverComments;
+	private String pmComments;
+	private String commercialRelationalComments;
+	private String incrementalReplacemntalSKU;
+	private String portfolioDelistStrategy;
+	private String specificSKUCutOffIntro;
+	private String switchDateAndDrivingDateReason;
+	private String commercialStrategy;
 
 }
