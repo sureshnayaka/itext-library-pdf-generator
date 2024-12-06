@@ -123,7 +123,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 				return Image.getInstance(input.readAllBytes());
 			}
 		} catch (IOException | BadElementException e) {
-			logger.error("Error loading image: " + e.getMessage());
+			logger.error("Error loading image: {}" ,e.getMessage());
 		}
 		return null;
 	}
@@ -131,8 +131,8 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	/**
 	 * To add table names on the tables
 	 */
-	public static void addHeaderTitles(Document document, String HeaderTitle) throws DocumentException {
-		Paragraph title = new Paragraph(HeaderTitle, new Font(Font.TIMES_ROMAN, 9, Font.BOLD));
+	public static void addHeaderTitles(Document document, String headerTitle) throws DocumentException {
+		Paragraph title = new Paragraph(headerTitle, new Font(Font.TIMES_ROMAN, 9, Font.BOLD));
 		title.setAlignment(Element.ALIGN_LEFT);
 		title.setFirstLineIndent(5f);
 		title.setSpacingAfter(5f);
@@ -174,7 +174,7 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 	public static void addRowSummary(PdfPTable table, String... values) throws DocumentException {
 		// Default font for cell content
 		Font cellFont = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, Color.BLACK);
-		Font fontStyle_30 = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, Color.RED);
+		Font fontStyle = FontFactory.getFont(FontFactory.TIMES_ROMAN, 9, Color.RED);
 		for (int i = 0; i < values.length; i++) {
 			PdfPCell cell = new PdfPCell(new Phrase(values[i], cellFont));
 			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -188,10 +188,10 @@ public class PDfGenerationHelpers extends PdfPageEventHelper {
 					float volumePercentage = Float.parseFloat(volumeString);
 
 					if (volumePercentage > 30) {
-						cell.setPhrase(new Phrase(values[i], fontStyle_30));
+						cell.setPhrase(new Phrase(values[i], fontStyle));
 					}
 				} catch (NumberFormatException e) {
-					logger.error("Invalid percentage format: " + values[i]);
+					logger.error("Invalid percentage format: {}",  values[i]);
 				}
 			}
 			table.addCell(cell);

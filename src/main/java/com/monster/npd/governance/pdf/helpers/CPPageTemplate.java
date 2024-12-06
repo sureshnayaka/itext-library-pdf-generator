@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -95,7 +94,7 @@ public class CPPageTemplate {
 		PDfGenerationHelpers.addTableData(document, DELIVERABLE_THRESHOLD_TITLE, columnWidths, rowData, headers, false);
 	}
 
-	public void addPortFolioStartegyForCp0(Document document, long requestId, CP cp) throws DocumentException {
+	public void addPortFolioStartegyForCp0(Document document, CP cp) throws DocumentException {
 
 		float[] columnWidths = { 3.5f, 3.5f, 3f, 3f, 5f, };
 
@@ -124,11 +123,12 @@ public class CPPageTemplate {
 				.flatMap(marketScopeDTO -> marketScopeDTO.getMarketScope().stream()
 						.filter(marketScope -> Boolean.TRUE.equals(marketScope.getLeadMarket()))
 						.map(marketScope -> new MarketScopeSummary(marketScopeDTO.getCpName(),
-								marketScope.getAnnualisedYear1Volume(), null,
-								marketScope.getAnnualisedYear1NSVLocalCurrency(), marketScope.getGrossMargin(), null)))
-				.collect(Collectors.toList());
+								marketScope.getAnnualisedYear1Volume(), marketScope.getVolumeChangeVsPrevious(),
+								marketScope.getAnnualisedYear1NSVLocalCurrency(), marketScope.getGrossMargin(),
+								marketScope.getTargetDPInWarehouse())))
+				.toList();
 
-		System.out.println("leadeMarketScope contains " + leadeMarketScope.size() + " items");
+		logger.info("leadeMarketScope contains {} {} ", leadeMarketScope.size(), " items");
 		String[][] rowData = getTableContentForCpSummary(leadeMarketScope);
 		String[] headers = cpSummaryTableFieldConfig.getHeaders().toArray(new String[0]);
 
@@ -145,7 +145,7 @@ public class CPPageTemplate {
 				.orElse(DEFAULT_VALUE);
 
 		Function<MarketScope, String> leadMarketValue = scope -> Boolean.TRUE.equals(scope.getLeadMarket()) ? "Y" : "N";
-		return commercialMarketScopes.stream().map(scope -> new String[] { "Great Britain",
+		return commercialMarketScopes.stream().map(scope -> new String[] { defaultValue.apply(scope.getPoMarketsId().getDisplayName()),
 				leadMarketValue.apply(scope), processNumber(scope.getThreeMonthLaunchVolume()),
 				processNumber(scope.getAnnualisedYear1Volume()), processNumber(scope.getCannibalisationImpact()),
 				processNumber(scope.getNsvCase()), processNumber(scope.getCogCase()),
@@ -156,9 +156,9 @@ public class CPPageTemplate {
 	}
 
 	public String[][] getTableContentForDelveriableThreshold(List<DeliverableThreshold> deliverableThresholds) {
-
+		List<DeliverableThreshold> getTwoRows = deliverableThresholds.stream().limit(2).toList();
 		AtomicInteger index = new AtomicInteger(0);
-		return deliverableThresholds.stream()
+		return getTwoRows.stream()
 				.map(scope -> new String[] { index.getAndIncrement() == 0 ? THIS_PROJECT : MONSTER_GREEN,
 						processNumber(scope.getNsvPerCase()), processNumber(scope.getGm()) + "%",
 						processNumber(scope.getCogs()), processNumber(scope.getVolume()), processNumber(scope.getRos()),

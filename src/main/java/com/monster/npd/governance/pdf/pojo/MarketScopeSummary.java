@@ -13,7 +13,7 @@ public class MarketScopeSummary {
 
 	private String cpName;
 	private String anualizedVolume;
-	private String volumeChange;
+	private Float volumeChange;
 	private String anualisedNsv;
 	private String gmPercentage;
 	private String alignedDP;

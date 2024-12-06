@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import com.monster.npd.governance.pdf.pojo.CP;
 import com.monster.npd.governance.pdf.pojo.DeliverableThresholdDTO;
+import com.monster.npd.governance.pdf.pojo.MarketScope;
 import com.monster.npd.governance.pdf.pojo.MarketScopeDTO;
 import com.monster.npd.governance.pdf.pojo.SubmissionGovernanceMilestone;
 import com.monster.npd.governance.pdf.pojo.SubmissionRequest;
@@ -42,7 +42,6 @@ public class CpDataProcessor {
 	@Autowired
 	private DeliverableThresholdRepository deliverableThresholdRepository;
 
-	
 	@Autowired
 	private SubmissionsRequestRepository submissionRequestRepository;
 
@@ -54,43 +53,51 @@ public class CpDataProcessor {
 	 * @return List<CP>
 	 */
 	public List<CP> getCPListForPdfGeneration(long requestId) {
-		List<CP> cps = new ArrayList<>();
+	    List<CP> cps = new ArrayList<>();
 
-		try {
+	    try {
+	        List<SubmissionRequestGovernanceMilestone> submissionRequest = submissionRequestGovernanceMilestoneRepository
+	                .findByIdRequestId(requestId);
 
-			List<SubmissionRequestGovernanceMilestone> submissionRequest = submissionRequestGovernanceMilestoneRepository
-					.findByIdRequestId(requestId);
+	        if (submissionRequest == null || submissionRequest.isEmpty()) {
+	            logger.warn("No SubmissionRequestGovernanceMilestone found for requestId: {}", requestId);
+	            return cps; // return empty list if no data found
+	        }
 
-			if (submissionRequest == null || submissionRequest.isEmpty()) {
-				logger.warn("No SubmissionRequestGovernanceMilestone found for requestId: {}", requestId);
-				return cps; // return empty list if no data found
-			}
+	        for (SubmissionRequestGovernanceMilestone request : submissionRequest) {
+	            SubmissionGovernanceMilestone governanceMilestone = request.getGovernanceMilestone();
+	            if (governanceMilestone == null) {
+	                logger.warn("GovernanceMilestone is null for requestId: {}", requestId);
+	                continue;
+	            }
 
-			for (SubmissionRequestGovernanceMilestone request : submissionRequest) {
-				SubmissionGovernanceMilestone governanceMilestone = request.getGovernanceMilestone();
-				String currentCheckpoint = request.getSubmissionRequest().getCurrentCheckpoint();
-				boolean isActiveCP = Optional.ofNullable(governanceMilestone)
-						.map(governance -> governance.getStage().contains(currentCheckpoint)).orElse(false);
+	            String currentCheckpoint = request.getSubmissionRequest().getCurrentCheckpoint();
+	            boolean isActiveCP = Optional.ofNullable(governanceMilestone.getStage())
+	                    .map(stage -> stage.contains(currentCheckpoint)).orElse(false);
+	            String decision = Optional.ofNullable(governanceMilestone.getDecision()).orElse("");
+	            boolean isApprovedCP = APPROVED.equalsIgnoreCase(decision);
+	            boolean isSamePrevious = Optional.ofNullable(governanceMilestone.getIsSamePreviousCp()).orElse(false);
 
-				cps.add(new CP(governanceMilestone.getStage(), governanceMilestone.getIsSamePreviousCp(), isActiveCP,
-						governanceMilestone.getComments(), governanceMilestone.getProjectManagerComments(),
-						governanceMilestone.getCommercialRationaleForChanges(),
-						governanceMilestone.getIncrementalReplacemntalSKU(),
-						governanceMilestone.getPortfolioDelistStrategy(),
-						governanceMilestone.getSpecificSKUCutOffIntro(),
-						governanceMilestone.getSwitchDateAndDrivingDateReason(),
-						governanceMilestone.getCommercialStrategy()));
-			}
-//			cps = cps = cps.stream()
-//			         .sorted(Comparator.comparing(CP::getCpName).reversed())
-//			         .collect(Collectors.toList());
+	            if (isApprovedCP || isActiveCP || isSamePrevious) {
+	                cps.add(new CP(governanceMilestone.getStage(), governanceMilestone.getIsSamePreviousCp(),
+	                        isActiveCP, governanceMilestone.getComments(),
+	                        governanceMilestone.getProjectManagerComments(),
+	                        governanceMilestone.getCommercialRationaleForChanges(),
+	                        governanceMilestone.getIncrementalReplacemntalSKU(),
+	                        governanceMilestone.getPortfolioDelistStrategy(),
+	                        governanceMilestone.getSpecificSKUCutOffIntro(),
+	                        governanceMilestone.getSwitchDateAndDrivingDateReason(),
+	                        governanceMilestone.getCommercialStrategy()));
+	            }
+	        }
 
-		} catch (Exception e) {
-			logger.error("Error occurred while fetching CP data for requestId {}: {}", requestId, e.getMessage(), e);
-		}
-		return cps;
+	    } catch (Exception e) {
+	        logger.error("Error occurred while fetching CP data for requestId {}: {}", requestId, e.getMessage(), e);
+	    }
+	    return cps;
 	}
-
+	
+ 
 	/**
 	 * @author Suresh
 	 * @param governanceId
@@ -135,7 +142,7 @@ public class CpDataProcessor {
 			List<R> data = fetchFunction.apply(governanceMilestoneId);
 			String stage = request.getGovernanceMilestone().getStage();
 			return dtoConstructor.apply(stage, data);
-		}).collect(Collectors.toList());
+		}).toList();
 	}
 
 	public Optional<SubmissionRequest> getProjectDetailsForCP0(long requestId) {
@@ -143,7 +150,6 @@ public class CpDataProcessor {
 				.map(SubmissionRequestGovernanceMilestone::getSubmissionRequest);
 	}
 
-	
 	/**
 	 * @author Suresh
 	 * @param requestId
@@ -189,10 +195,12 @@ public class CpDataProcessor {
 		SubmissionRequest submissionRequest;
 		try {
 			submissionRequest = getSubmissionRequest(requestId);
+			List<MarketScope> commercialMarketScopes = getMarketScopeById(requestId).stream()
+					.filter(dto -> dto.getCpName().equals("CP0")).findFirst().map(MarketScopeDTO::getMarketScope)
+					.orElseThrow(() -> new RuntimeException("cpName not found: {}".concat("CP0")));
+			String marketLeadName = commercialMarketScopes.get(0).getPoMarketsId().getDisplayName();
 			if (!Utils.isNullOrEmptyObject(submissionRequest)) {
-				String market = getDisplayNameOrDefault(
-						submissionRequest.getLeadMarket() != null ? submissionRequest.getLeadMarket().getDisplayName()
-								: null);
+				String market = getDisplayNameOrDefault(marketLeadName != null ? marketLeadName : null);
 				String brand = getDisplayNameOrDefault(
 						submissionRequest.getBrands() != null ? submissionRequest.getBrands().getDisplayName() : null);
 				String platform = getDisplayNameOrDefault(

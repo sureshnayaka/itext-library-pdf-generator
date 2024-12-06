@@ -98,9 +98,6 @@ public class SubmissionRequest {
 	@JoinColumn(name = "R_PO_PLATFORMS_Id", referencedColumnName = "id", insertable = false, updatable = false)
 	private PlatformModel platforms;
 
-	@OneToOne
-	@JoinColumn(name = "R_PO_LEAD_MARKET_Id", referencedColumnName = "id", insertable = false, updatable = false)
-	private LeadMarketModel leadMarket;
 
 	@OneToOne
 	@JoinColumn(name = "R_PO_VARIANT_SKU_Id", referencedColumnName = "id", insertable = false, updatable = false)

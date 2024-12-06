@@ -57,47 +57,47 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 	 * @return bytes array
 	 * @throws Exception
 	 */
+	@SuppressWarnings("resource")
 	public byte[] generatePdf(long requestId, HttpHeaders headers) {
+	    Document document = new Document(PageSize.A4.rotate(), 32, 32, 32, 32); // margin 0.5 inches to remove the bleed
+	    ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-		Document document = new Document(PageSize.A4.rotate(), 32, 32, 32, 32);// margin 0.5 inches to remove the bleed
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
+	    if (Utils.isNullOrEmptyLong(requestId)) {
+	        throw new NullPointerException("Empty request id");
+	    }
 
-		try {
-			if (Utils.isNullOrEmptyLong(requestId)) {
-				throw new NullPointerException("Empty request id");
-			}
+	    List<CP> cp = cpHelper.getCPListForPdfGeneration(requestId);
 
-			List<CP> cp = cpHelper.getCPListForPdfGeneration(requestId);
+	    // Check if the cp list is null or empty and throw an error
+	    if (cp == null || cp.isEmpty()) {
+	        throw new NullPointerException("CP list is null or empty for requestId: " + requestId);
+	    }
 
-			// Check if the cp list is null or empty and throw an error
-			if (cp == null || cp.isEmpty()) {
-				throw new NullPointerException("CP list is null or empty for requestId: " + requestId);
-			}
+	    try (out) {
+	        PDfGenerationHelpers generationHelpers = new PDfGenerationHelpers();
+	        PdfWriter writer = PdfWriter.getInstance(document, out);
+	        writer.setPageEvent(generationHelpers);
+	        document.open();
+	        String header = cpHelper.getHeaderValues(requestId);
+	        // Initialize the CP data in the document
+	        initializeCP(document, cp, requestId, writer);
 
-			PDfGenerationHelpers generationHelpers = new PDfGenerationHelpers();
-			PdfWriter writer = PdfWriter.getInstance(document, out);
-			writer.setPageEvent(generationHelpers);
-			document.open();
-			String header = cpHelper.getHeaderValues(requestId);
-			// Initialize the CP data in the document
-			initializeCP(document, cp, requestId, writer);
+	        // TODO need to know how to name should be for PDF
+	        headers.setContentType(MediaType.APPLICATION_PDF);
+	        String fileName = requestId + "-" + header + "CP-0" + "-"
+	                + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".pdf";
 
-			// TODO need to know how to name should be for PDF
-			headers.setContentType(MediaType.APPLICATION_PDF);
-			String fileName = requestId + "-" + header + "CP-0" + "-"
-					+ new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".pdf";
+	        headers.setContentDispositionFormData("attachment", fileName);
+	        logger.info("Successfully Generated PDF!!");
 
-			headers.setContentDispositionFormData("attachment", fileName);
-			logger.info("Successfully Generated PDF!!");
+	    } catch (Exception e) {
+	        logger.error("Error in creating CPs PDF : {}", e.getMessage(), e);
+	        throw new NullPointerException(e.getMessage());
+	    } finally {
+	        document.close();
+	    }
 
-		} catch (Exception e) {
-			logger.error("Error in creating CPs PDF : {}", e.getMessage(), e);
-			throw new NullPointerException(e.getMessage());
-		} finally {
-			document.close();
-		}
-
-		return out.toByteArray();
+	    return out.toByteArray();
 	}
 
 
@@ -136,11 +136,10 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 			throws DocumentException {
 
 		String cpName = cpObj.getCpName();
-
+		System.err.println(cpObj.getIsSamePreviourCP());
 		boolean isSamePreviousCP = Optional.ofNullable(cpObj.getIsSamePreviourCP()).orElse(false);
-//		boolean isActiveCP = Optional.ofNullable(cpObj.getIsActive()).orElse(false);
 
-		if (isSamePreviousCP) {
+		if (isSamePreviousCP || (Utils.isNullOrEmptyObject(cpObj.getIsSamePreviourCP())&& cpObj.getIsActive())) {
 			document.newPage();
 			PDfGenerationHelpers.addTitle(document, cpName.concat(SAME_PREVIOUS_CP), false);
 			return;
@@ -180,7 +179,7 @@ public class PdfGeneratorServiceImplementation implements PdfGeneratorInterface 
 		cpPageTemplate.addDeliverablesVSThresholdForCp(document, requestId, cpName);
 
 		if (cpName.equalsIgnoreCase(CP0)|| cpName.equalsIgnoreCase("CP1")) {
-			cpPageTemplate.addPortFolioStartegyForCp0(document, requestId, cp);
+			cpPageTemplate.addPortFolioStartegyForCp0(document, cp);
 
 		}
 

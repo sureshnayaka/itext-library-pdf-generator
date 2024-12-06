@@ -6,10 +6,10 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 
 @SpringBootApplication(scanBasePackages = "com.monster.npd.governance.pdf")
 @EntityScan(basePackages = "com.monster.npd.governance.pdf.pojo")
-public class SpringItextPdfGenerationApplication {
+public class MonsterNpdGovernancePdf {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SpringItextPdfGenerationApplication.class, args);
+		SpringApplication.run(MonsterNpdGovernancePdf.class, args);
 
 	}
 
